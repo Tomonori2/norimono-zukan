@@ -843,18 +843,32 @@ function drawCar(svg, car) {
 }
 
 function sayJp(text, cb) {
-  if (!window.speechSynthesis) { if (cb) cb(); return; }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP"; u.rate = 0.85; u.pitch = 1.1;
-  u.onend = () => { if (cb) cb(); };
-  setTimeout(() => window.speechSynthesis.speak(u), 300);
+  // Google翻訳TTS → Audio要素で再生（スマホ対応）
+  try {
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=' + encodeURIComponent(text);
+    const a = new Audio(url);
+    a.volume = 1.0;
+    a.onended = () => { if (cb) cb(); };
+    a.onerror = () => {
+      // フォールバック: Web Speech API
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ja-JP"; u.rate = 0.85; u.pitch = 1.1;
+        u.onend = () => { if (cb) cb(); };
+        setTimeout(() => window.speechSynthesis.speak(u), 300);
+      } else { if (cb) cb(); }
+    };
+    a.play().catch(() => { a.onerror(); });
+  } catch(e) { if (cb) cb(); }
 }
 function sayEn(text) {
-  if (!window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "en-US"; u.rate = 0.8; u.pitch = 1.15;
-  window.speechSynthesis.speak(u);
+  try {
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=' + encodeURIComponent(text);
+    const a = new Audio(url);
+    a.volume = 1.0;
+    a.play().catch(() => {});
+  } catch(e) {}
 }
 function speakQ() { sayJp("この のりものは なに？", () => sayEn("What is this vehicle?")); }
 let order=[], idx=0, correctCount=0, answered=false;

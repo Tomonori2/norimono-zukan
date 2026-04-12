@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>はたらくのりもの クイズ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF6B6B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="くるまクイズ">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-6px); }
+  80%      { transform: translateX(6px); }
+}
+@keyframes pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+@keyframes feedbackPop {
+  from { opacity: 0; transform: scale(0.6); }
+  60%  { transform: scale(1.15); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes starFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(-90px) scale(0.4) rotate(360deg); }
+}
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(120px) rotate(720deg); }
+}
+@keyframes titleBob {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes nextPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(78,205,196,0.5); }
+  60%      { box-shadow: 0 0 0 10px rgba(78,205,196,0); }
+}
+@keyframes bgmPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: linear-gradient(160deg, #fff5e0 0%, #ffe8f0 40%, #e8f4ff 100%);
+  min-height: 100vh;
+  display: flex; justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Hiragino Maru Gothic ProN', 'rounded mplus 1c', sans-serif;
+}
+.wrap { max-width: 520px; width: 100%; }
+.title {
+  font-size: 28px; font-weight: 900; text-align: center; letter-spacing: 2px;
+  background: linear-gradient(90deg, #FF6B6B, #FF9F43, #FFD93D);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleBob 2.5s ease-in-out infinite;
+  margin-bottom: 2px;
+}
+.title-en { font-size: 13px; color: #FFB347; text-align: center; margin-bottom: 1rem; font-weight: 700; letter-spacing: 1px; }
+.score-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 0.75rem; }
+.score-item {
+  text-align: center; border-radius: 16px; padding: 8px 18px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+.score-item:nth-child(1) { background: linear-gradient(135deg, #FFD6D6, #FFAAAA); }
+.score-item:nth-child(2) { background: linear-gradient(135deg, #D6EEFF, #AACFFF); }
+.score-item:nth-child(3) { background: linear-gradient(135deg, #D6FFE4, #AAFFCC); }
+.score-num { font-size: 26px; font-weight: 900; color: #333; }
+.score-label { font-size: 11px; color: #777; font-weight: 700; }
+.score-num.popped { animation: pop 0.4s ease; }
+.progress-wrap { margin-bottom: 1rem; }
+.progress-bar-bg { background: #ffe0e0; border-radius: 99px; height: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
+.progress-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #FF6B6B, #FFD93D); transition: width 0.5s cubic-bezier(.4,1.6,.6,1); }
+.car-box {
+  border: none;
+  border-radius: 24px;
+  background: #fff;
+  padding: 1.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 24px rgba(255,107,107,0.13), 0 2px 8px rgba(0,0,0,0.06);
+  animation: slideIn 0.4s cubic-bezier(.4,1.6,.6,1);
+}
+.car-svg-wrap { width: 100%; max-width: 320px; margin: 0 auto 10px; }
+.car-img { width: 100%; max-width: 320px; height: 180px; object-fit: cover; border-radius: 14px; display: block; margin: 0 auto 10px; box-shadow: 0 3px 12px rgba(0,0,0,0.10); }
+.q-jp { font-size: 20px; font-weight: 900; color: #FF6B6B; margin-bottom: 2px; }
+.q-en { font-size: 13px; color: #FFB347; margin-bottom: 10px; font-weight: 700; }
+.speak-btn {
+  padding: 8px 22px; font-size: 14px;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #FFE0A0, #FFD6D6);
+  color: #CC5500; cursor: pointer; font-weight: 900;
+  box-shadow: 0 2px 8px rgba(255,180,0,0.2);
+  transition: transform 0.12s;
+}
+.speak-btn:active { transform: scale(0.95); }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+.choice-btn {
+  padding: 16px 8px;
+  border: none; border-radius: 20px;
+  background: #fff; color: #333;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  font-family: inherit;
+}
+.choice-btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.choice-btn:active { transform: scale(0.96); }
+.choice-btn:nth-child(1) { background: linear-gradient(145deg, #fff5f5, #ffe8e8); border-bottom: 4px solid #FF6B6B; }
+.choice-btn:nth-child(2) { background: linear-gradient(145deg, #f0fffe, #d6f8f4); border-bottom: 4px solid #4ECDC4; }
+.choice-btn:nth-child(3) { background: linear-gradient(145deg, #fffce8, #fff3b0); border-bottom: 4px solid #FFD93D; }
+.choice-btn:nth-child(4) { background: linear-gradient(145deg, #f0fff8, #c8f5e8); border-bottom: 4px solid #95E1D3; }
+.choice-btn.correct { background: linear-gradient(145deg, #e8fff0, #b6ffce) !important; border-bottom: 4px solid #2ECC71 !important; color: #1a7a40; }
+.choice-btn.wrong { background: linear-gradient(145deg, #fff0f0, #ffcccc) !important; border-bottom: 4px solid #E74C3C !important; color: #922b21; animation: shake 0.45s ease; }
+.c-jp { display: block; font-size: 16px; font-weight: 900; }
+.c-en { display: block; font-size: 11px; margin-top: 3px; opacity: 0.65; font-weight: 700; }
+.feedback { text-align: center; min-height: 60px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; }
+.fb-inner { animation: feedbackPop 0.4s cubic-bezier(.4,1.6,.6,1); }
+.fb-jp { font-size: 24px; font-weight: 900; }
+.fb-en { font-size: 13px; color: #888; margin-top: 3px; font-weight: 700; }
+.next-btn {
+  width: 100%; padding: 16px; font-size: 18px; font-weight: 900;
+  border: none; border-radius: 20px;
+  background: linear-gradient(90deg, #43e8d8, #4ECDC4);
+  color: #fff; cursor: pointer; display: none;
+  box-shadow: 0 4px 16px rgba(78,205,196,0.35);
+  animation: nextPulse 1.4s ease infinite;
+  font-family: inherit;
+  letter-spacing: 1px;
+  transition: transform 0.12s;
+}
+.next-btn:active { transform: scale(0.97); }
+.result-box {
+  text-align: center; padding: 2rem 1.5rem;
+  background: #fff; border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(255,107,107,0.12);
+  animation: slideIn 0.5s cubic-bezier(.4,1.4,.6,1);
+}
+.result-stars { font-size: 36px; letter-spacing: 6px; margin-bottom: 8px; }
+.result-big { font-size: 60px; font-weight: 900; background: linear-gradient(90deg, #FF6B6B, #FFD93D); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.res-jp { font-size: 22px; color: #FF8C00; margin: 8px 0 2px; font-weight: 900; }
+.res-en { font-size: 14px; color: #bbb; margin-bottom: 1.5rem; font-weight: 700; }
+.retry-btn {
+  padding: 16px 40px; font-size: 18px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #FF6B6B, #FF9F43);
+  color: #fff; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255,107,107,0.35);
+  font-family: inherit;
+  transition: transform 0.12s;
+}
+.retry-btn:active { transform: scale(0.96); }
+.bgm-btn {
+  display: block; margin: 0 auto 1rem;
+  padding: 9px 26px; font-size: 14px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #FFE0A0, #FFCCEE);
+  color: #CC5500; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(255,180,0,0.2);
+  transition: transform 0.12s;
+  font-family: inherit;
+}
+.bgm-btn:active { transform: scale(0.95); animation: bgmPop 0.3s ease; }
+#confettiCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+.mode-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 1rem; }
+.mode-btn {
+  padding: 10px 28px; font-size: 16px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: #eee; color: #999;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.mode-btn.active {
+  background: linear-gradient(90deg, #FF6B6B, #FFD93D);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255,107,107,0.3);
+}
+.zukan-emoji { font-size: 48px; margin: 10px 0 4px; }
+.zukan-name-jp { font-size: 26px; font-weight: 900; color: #FF6B6B; }
+.zukan-name-en { font-size: 14px; font-weight: 700; color: #FFB347; margin-bottom: 10px; }
+.zukan-fact {
+  font-size: 16px; line-height: 1.8; color: #555;
+  background: linear-gradient(135deg, #FFF9F0, #FFF0F5);
+  border-radius: 16px; padding: 14px 18px; margin: 10px 0;
+  font-weight: 700; text-align: left;
+}
+.zukan-nav { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 1rem; }
+.zukan-nav-btn {
+  padding: 12px 28px; font-size: 16px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #43e8d8, #4ECDC4);
+  color: #fff; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(78,205,196,0.3);
+  transition: transform 0.12s;
+}
+.zukan-nav-btn:active { transform: scale(0.95); }
+.zukan-counter { font-size: 18px; font-weight: 900; color: #888; min-width: 60px; text-align: center; }
+</style>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+<div class="wrap">
+  <div class="title">🚒 はたらくのりもの クイズ 🚌</div>
+  <div class="title-en">✨ Working Vehicles Quiz ✨</div>
+  <button class="bgm-btn" id="bgmBtn" onclick="toggleBgm()">🎵 BGM オン</button>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="modeQuiz" onclick="switchMode('quiz')">🎯 クイズ</button>
+    <button class="mode-btn" id="modeZukan" onclick="switchMode('zukan')">📖 ずかん</button>
+  </div>
+  <div class="score-bar" id="scoreBar">
+    <div class="score-item"><div class="score-num" id="correct">0</div><div class="score-label">⭐ せいかい</div></div>
+    <div class="score-item"><div class="score-num" id="qnum">1</div><div class="score-label">📝 もんだい</div></div>
+    <div class="score-item"><div class="score-num" id="total">8</div><div class="score-label">🎯 ぜんぶ</div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+  <div id="quiz">
+    <div class="car-box" id="carBox">
+      <div id="carDisplay">
+        <div class="car-svg-wrap"><svg id="carSvg" viewBox="0 0 280 160" width="100%" height="auto"></svg></div>
+      </div>
+      <div class="q-jp">この のりものは なに？</div>
+      <div class="q-en">What is this vehicle?</div>
+      <button class="speak-btn" onclick="speakQ()">🔊 もういちど きく</button>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQ()">つぎへ ▶</button>
+  </div>
+  <div id="result" style="display:none;">
+    <div class="result-box">
+      <div class="result-stars" id="rStars"></div>
+      <div class="result-big" id="rScore"></div>
+      <div class="res-jp" id="rMsgJp"></div>
+      <div class="res-en" id="rMsgEn"></div>
+      <button class="retry-btn" onclick="restart()">🔄 もういちど あそぶ</button>
+    </div>
+  </div>
+  <div id="zukan" style="display:none;">
+    <div class="car-box" id="zukanBox">
+      <div id="zukanDisplay"></div>
+      <div class="zukan-emoji" id="zukanEmoji"></div>
+      <div class="zukan-name-jp" id="zukanNameJp"></div>
+      <div class="zukan-name-en" id="zukanNameEn"></div>
+      <div class="zukan-fact" id="zukanFact"></div>
+      <button class="speak-btn" onclick="sayJp(cars[zukanIdx].fact)">🔊 せつめいを きく</button>
+    </div>
+    <div class="zukan-nav">
+      <button class="zukan-nav-btn" onclick="zukanPrev()">◀ まえ</button>
+      <span class="zukan-counter" id="zukanCounter">1 / 12</span>
+      <button class="zukan-nav-btn" onclick="zukanNext()">つぎ ▶</button>
+    </div>
+  </div>
+</div>
+<script>
+const cars = [
+  { jp: "しょうぼうしゃ", en: "Fire Truck", readJp: "しょうぼうしゃ！かじを けすよ！", readEn: "Fire truck!", type: "fire",
+    fact: "しょうぼうしゃは おおきな ポンプで みずを だすよ。はしごしゃは ビルの うえまで とどくんだ！", emoji: "🚒" },
+  { jp: "きゅうきゅうしゃ", en: "Ambulance", readJp: "きゅうきゅうしゃ！びょうきのひとを はこぶよ！", readEn: "Ambulance!", type: "ambulance",
+    fact: "きゅうきゅうしゃは サイレンを ならして はしるよ。なかには ベッドや くすりが あるんだ！", emoji: "🚑" },
+  { jp: "パトカー", en: "Police Car", readJp: "パトカー！まちを まもるよ！", readEn: "Police car!", type: "police",
+    fact: "パトカーは しろと くろの もようだよ。あかと あおの ライトが くるくる まわるんだ！", emoji: "🚓" },
+  { jp: "ごみしゅうしゅうしゃ", en: "Garbage Truck", readJp: "ごみしゅうしゅうしゃ！ごみを あつめるよ！", readEn: "Garbage truck!", type: "garbage",
+    fact: "ごみしゅうしゅうしゃは まいにち まちを まわって ごみを あつめるよ。うしろから ごみを いれるんだ！", emoji: "🗑️" },
+  { jp: "ダンプカー", en: "Dump Truck", readJp: "ダンプカー！つちや いしを はこぶよ！", readEn: "Dump truck!", type: "dump",
+    fact: "ダンプカーは にだいが うしろに かたむいて つちを おろすよ。こうじげんばで だいかつやく！", emoji: "🚛" },
+  { jp: "バス", en: "Bus", readJp: "バス！おきゃくさんを はこぶよ！", readEn: "Bus!", type: "bus",
+    fact: "バスは たくさんの ひとを いちどに はこべるよ。まちの なかを はしる ろせんバスや とおくに いく こうそくバスが あるよ！", emoji: "🚌" },
+  { jp: "クレーン車", en: "Crane Truck", readJp: "クレーンしゃ！おもいものを もちあげるよ！", readEn: "Crane truck!", type: "crane",
+    fact: "クレーンしゃは ながい うでで おもい ものを もちあげるよ。ビルを つくる ときに つかうんだ！", emoji: "🏗️" },
+  { jp: "タンクローリー", en: "Tanker Truck", readJp: "タンクローリー！あぶらを はこぶよ！", readEn: "Tanker truck!", type: "tanker",
+    fact: "タンクローリーは まるい タンクに ガソリンや ぎゅうにゅうを いれて はこぶよ。きけんぶつの マークが ついてるんだ！", emoji: "⛽" },
+  { jp: "でんしゃ", en: "Train", readJp: "でんしゃ！みんなを はこぶよ！", readEn: "Train!", type: "train",
+    fact: "でんしゃは レールの うえを はしるよ。しんかんせんは じそく 300キロも でるんだ！", emoji: "🚃" },
+  { jp: "ふね", en: "Ship", readJp: "ふね！うみを わたるよ！", readEn: "Ship!", type: "ship",
+    fact: "ふねは うみや かわを わたるよ。おおきな ふねは くるまや コンテナも はこべるんだ！", emoji: "🚢" },
+  { jp: "ひこうき", en: "Airplane", readJp: "ひこうき！そらを とぶよ！", readEn: "Airplane!", type: "airplane",
+    fact: "ひこうきは そらの うえを とぶよ。おおきな ひこうきは 500にん いじょう のれるんだ！", emoji: "✈️" },
+  { jp: "ショベルカー", en: "Excavator", readJp: "ショベルカー！つちを ほるよ！", readEn: "Excavator!", type: "excavator",
+    fact: "ショベルカーは おおきな アームで つちを ほるよ。キャタピラで でこぼこの みちも はしれるんだ！", emoji: "🔧" }
+];
+
+function drawCar(svg, car) {
+  const t = car.type;
+  let s = "";
+
+  // Detailed wheel with spokes
+  const W = (cx, cy) => `
+    <circle cx="${cx}" cy="${cy}" r="19" fill="#1a1a1a"/>
+    <circle cx="${cx}" cy="${cy}" r="13" fill="#444"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="#ccc"/>
+    <line x1="${cx-13}" y1="${cy}" x2="${cx+13}" y2="${cy}" stroke="#888" stroke-width="2"/>
+    <line x1="${cx}" y1="${cy-13}" x2="${cx}" y2="${cy+13}" stroke="#888" stroke-width="2"/>
+    <line x1="${cx-9}" y1="${cy-9}" x2="${cx+9}" y2="${cy+9}" stroke="#888" stroke-width="2"/>
+    <line x1="${cx+9}" y1="${cy-9}" x2="${cx-9}" y2="${cy+9}" stroke="#888" stroke-width="2"/>`;
+
+  if (t === "fire") {
+    // 消防車: 赤・長いボディ・はしご・赤色灯
+    s = `
+      <rect x="94" y="74" width="174" height="56" rx="6" fill="#CC1111"/>
+      <rect x="6" y="50" width="92" height="80" rx="10" fill="#BB0E0E"/>
+      <rect x="6" y="50" width="92" height="10" rx="10" fill="#DD2222"/>
+      <rect x="14" y="58" width="36" height="28" rx="5" fill="#87CEEB" opacity="0.9"/>
+      <rect x="56" y="58" width="32" height="28" rx="5" fill="#87CEEB" opacity="0.9"/>
+      <rect x="14" y="58" width="36" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="56" y="58" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="50" y="58" width="5" height="28" fill="#AA0E0E"/>
+      <rect x="12" y="40" width="70" height="12" rx="5" fill="#880000"/>
+      <rect x="14" y="41" width="18" height="10" rx="3" fill="#FF2222"/>
+      <rect x="36" y="41" width="18" height="10" rx="3" fill="#2244FF"/>
+      <rect x="58" y="41" width="18" height="10" rx="3" fill="#FF2222"/>
+      <rect x="100" y="58" width="164" height="17" rx="4" fill="#AAA"/>
+      <rect x="100" y="60" width="164" height="10" rx="3" fill="#C8C8C8"/>
+      <line x1="120" y1="58" x2="120" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="140" y1="58" x2="140" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="160" y1="58" x2="160" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="180" y1="58" x2="180" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="200" y1="58" x2="200" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="220" y1="58" x2="220" y2="75" stroke="#888" stroke-width="2.5"/>
+      <line x1="240" y1="58" x2="240" y2="75" stroke="#888" stroke-width="2.5"/>
+      <rect x="6" y="102" width="262" height="6" fill="#FFD700"/>
+      <rect x="106" y="80" width="38" height="28" rx="3" fill="#AA0A0A" stroke="#FFD700" stroke-width="1.5"/>
+      <rect x="152" y="80" width="38" height="28" rx="3" fill="#AA0A0A" stroke="#FFD700" stroke-width="1.5"/>
+      <rect x="198" y="80" width="38" height="28" rx="3" fill="#AA0A0A" stroke="#FFD700" stroke-width="1.5"/>
+      <rect x="121" y="92" width="6" height="3" rx="1" fill="#FFD700"/>
+      <rect x="167" y="92" width="6" height="3" rx="1" fill="#FFD700"/>
+      <rect x="213" y="92" width="6" height="3" rx="1" fill="#FFD700"/>
+      <circle cx="244" cy="94" r="13" fill="#AA0A0A" stroke="#880000" stroke-width="1.5"/>
+      <circle cx="244" cy="94" r="7" fill="#CC1111"/>
+      <rect x="4" y="68" width="14" height="12" rx="4" fill="#FFE87A"/>
+      <rect x="257" y="80" width="9" height="12" rx="3" fill="#FF5555"/>
+      <rect x="4" y="108" width="14" height="22" rx="4" fill="#990E0E"/>
+      ${W(54, 130)} ${W(208, 130)}`;
+
+  } else if (t === "ambulance") {
+    // 救急車: 白ボディ・赤ライン・大きな赤十字・ライトバー
+    s = `
+      <defs>
+        <linearGradient id="ambBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E8E8E8"/>
+        </linearGradient>
+        <linearGradient id="ambWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="6" y="48" width="260" height="84" rx="14" fill="url(#ambBody)" stroke="#CCC" stroke-width="1.5"/>
+      <rect x="6" y="86" width="260" height="14" fill="#E63946"/>
+      <rect x="6" y="86" width="260" height="3" fill="#C1121F"/>
+      <path d="M6,48 L108,48 L92,86 L6,86 Z" fill="#F0F0F0"/>
+      <rect x="14" y="56" width="40" height="30" rx="4" fill="url(#ambWin)"/>
+      <rect x="58" y="56" width="32" height="30" rx="4" fill="url(#ambWin)"/>
+      <rect x="14" y="56" width="40" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="58" y="56" width="32" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="54" y="56" width="4" height="30" fill="#CCC"/>
+      <rect x="116" y="56" width="144" height="26" rx="3" fill="url(#ambWin)"/>
+      <rect x="116" y="56" width="144" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <line x1="150" y1="56" x2="150" y2="82" stroke="#CCC" stroke-width="1.5"/>
+      <line x1="184" y1="56" x2="184" y2="82" stroke="#CCC" stroke-width="1.5"/>
+      <line x1="218" y1="56" x2="218" y2="82" stroke="#CCC" stroke-width="1.5"/>
+      <circle cx="188" cy="112" r="16" fill="#fff" stroke="#E63946" stroke-width="2"/>
+      <rect x="184" y="100" width="8" height="24" fill="#E63946"/>
+      <rect x="176" y="108" width="24" height="8" fill="#E63946"/>
+      <rect x="24" y="105" width="62" height="18" rx="3" fill="#fff" stroke="#CCC" stroke-width="1"/>
+      <text x="55" y="119" text-anchor="middle" font-size="12" fill="#E63946" font-weight="900" font-family="Arial">救急</text>
+      <rect x="60" y="34" width="60" height="14" rx="6" fill="#333"/>
+      <rect x="62" y="35" width="16" height="12" rx="2" fill="#FF2222"/>
+      <rect x="82" y="35" width="16" height="12" rx="2" fill="#4466FF"/>
+      <rect x="102" y="35" width="16" height="12" rx="2" fill="#FF2222"/>
+      <circle cx="70" cy="41" r="4" fill="#FFAAAA" opacity="0.8"/>
+      <circle cx="90" cy="41" r="4" fill="#AABBFF" opacity="0.8"/>
+      <circle cx="110" cy="41" r="4" fill="#FFAAAA" opacity="0.8"/>
+      <rect x="4" y="60" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="11" cy="67" r="4" fill="#FFF8C0"/>
+      <rect x="260" y="84" width="8" height="10" rx="2" fill="#FF3333"/>
+      <rect x="6" y="110" width="8" height="20" rx="2" fill="#CCC"/>
+      <rect x="258" y="110" width="8" height="20" rx="2" fill="#CCC"/>
+      ${W(56, 132)} ${W(212, 132)}`;
+
+  } else if (t === "police") {
+    // パトカー: 白黒ツートン・ライトバー・POLICE文字
+    s = `
+      <defs>
+        <linearGradient id="polWhite" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E8E8E8"/>
+        </linearGradient>
+        <linearGradient id="polBlack" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2a2a3e"/><stop offset="1" stop-color="#0a0a1e"/>
+        </linearGradient>
+        <linearGradient id="polWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#5AA0C8"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <path d="M20,132 Q6,132 6,112 L6,95 Q6,88 14,86 L50,82 Q58,62 72,58 L208,58 Q220,62 228,82 L262,86 Q270,88 270,96 L270,112 Q270,132 256,132 Z" fill="url(#polWhite)" stroke="#BBB" stroke-width="1.5"/>
+      <path d="M6,95 L6,112 Q6,132 20,132 L256,132 Q270,132 270,112 L270,95 Z" fill="url(#polBlack)"/>
+      <rect x="6" y="95" width="264" height="3" fill="#000"/>
+      <path d="M58,64 L88,64 L80,90 L56,90 Z" fill="url(#polWin)"/>
+      <path d="M60,64 L88,64 L84,72 L58,72 Z" fill="#fff" opacity="0.4"/>
+      <path d="M92,64 L148,64 L148,90 L86,90 Z" fill="url(#polWin)"/>
+      <path d="M92,64 L148,64 L148,70 L90,70 Z" fill="#fff" opacity="0.4"/>
+      <path d="M152,64 L208,64 L214,90 L152,90 Z" fill="url(#polWin)"/>
+      <path d="M152,64 L208,64 L210,70 L152,70 Z" fill="#fff" opacity="0.4"/>
+      <line x1="150" y1="60" x2="150" y2="90" stroke="#666" stroke-width="2"/>
+      <rect x="80" y="44" width="120" height="16" rx="5" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
+      <rect x="82" y="46" width="28" height="12" rx="2" fill="#FF2222"/>
+      <rect x="114" y="46" width="28" height="12" rx="2" fill="#4466FF"/>
+      <rect x="146" y="46" width="28" height="12" rx="2" fill="#FF2222"/>
+      <rect x="178" y="46" width="20" height="12" rx="2" fill="#4466FF"/>
+      <circle cx="96" cy="52" r="3.5" fill="#FFAAAA" opacity="0.9"/>
+      <circle cx="128" cy="52" r="3.5" fill="#AABBFF" opacity="0.9"/>
+      <circle cx="160" cy="52" r="3.5" fill="#FFAAAA" opacity="0.9"/>
+      <rect x="80" y="40" width="120" height="6" rx="2" fill="#333"/>
+      <text x="140" y="120" text-anchor="middle" font-size="13" font-weight="900" fill="#FFD700" font-family="Arial,sans-serif" letter-spacing="3">POLICE</text>
+      <circle cx="42" cy="108" r="6" fill="#FFD700" stroke="#E0A000" stroke-width="1"/>
+      <text x="42" y="112" text-anchor="middle" font-size="8" fill="#000" font-weight="900">★</text>
+      <circle cx="238" cy="108" r="6" fill="#FFD700" stroke="#E0A000" stroke-width="1"/>
+      <text x="238" y="112" text-anchor="middle" font-size="8" fill="#000" font-weight="900">★</text>
+      <rect x="4" y="92" width="14" height="12" rx="3" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="11" cy="98" r="3.5" fill="#FFF8C0"/>
+      <rect x="262" y="92" width="8" height="10" rx="2" fill="#FF3333"/>
+      ${W(62, 132)} ${W(216, 132)}`;
+
+  } else if (t === "garbage") {
+    // ゴミ収集車: 白・青・大きなホッパー・リサイクルマーク
+    s = `
+      <rect x="6" y="42" width="92" height="88" rx="10" fill="#E8F0FF"/>
+      <rect x="6" y="42" width="92" height="10" rx="10" fill="#FFFFFF"/>
+      <rect x="14" y="50" width="38" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="58" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="14" y="50" width="38" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="58" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="52" y="50" width="5" height="30" fill="#C8D8F0"/>
+      <rect x="26" y="32" width="24" height="12" rx="5" fill="#C89A10"/>
+      <rect x="28" y="33" width="10" height="10" rx="3" fill="#FFD700"/>
+      <rect x="42" y="33" width="6" height="10" rx="3" fill="#FFD700"/>
+      <rect x="96" y="26" width="178" height="104" rx="8" fill="#1A5FBF"/>
+      <rect x="96" y="26" width="178" height="12" rx="8" fill="#2A7AE0"/>
+      <rect x="96" y="80" width="178" height="50" rx="4" fill="#E8F0FF"/>
+      <rect x="104" y="60" width="162" height="4" rx="2" fill="#0A3A8A" opacity="0.5"/>
+      <rect x="104" y="86" width="162" height="4" rx="2" fill="#1A5FBF" opacity="0.5"/>
+      <circle cx="162" cy="75" r="26" fill="#0A3A8A"/>
+      <text x="162" y="83" text-anchor="middle" font-size="28" fill="#7FD4FF">♻</text>
+      <rect x="248" y="30" width="28" height="100" rx="6" fill="#0A3A8A"/>
+      <rect x="252" y="38" width="20" height="52" rx="4" fill="#072A6A" stroke="#1A5FBF" stroke-width="1"/>
+      <line x1="252" y1="64" x2="272" y2="64" stroke="#2A7AE0" stroke-width="3"/>
+      <rect x="246" y="114" width="30" height="16" rx="3" fill="#FFD700"/>
+      <line x1="252" y1="114" x2="252" y2="130" stroke="#1a1a1a" stroke-width="3"/>
+      <line x1="261" y1="114" x2="261" y2="130" stroke="#1a1a1a" stroke-width="3"/>
+      <line x1="270" y1="114" x2="270" y2="130" stroke="#1a1a1a" stroke-width="3"/>
+      <rect x="4" y="58" width="14" height="12" rx="4" fill="#FFE87A"/>
+      <rect x="4" y="108" width="14" height="22" rx="4" fill="#C8D8F0"/>
+      ${W(54, 130)} ${W(183, 130)} ${W(226, 130)}`;
+
+  } else if (t === "dump") {
+    // ダンプカー: 黄色ボディ・ダンプベッド・岩・油圧シリンダー
+    s = `
+      <defs>
+        <linearGradient id="dumpYel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFD84D"/><stop offset="1" stop-color="#E8A000"/>
+        </linearGradient>
+        <linearGradient id="dumpBed" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFCC33"/><stop offset="1" stop-color="#CC8800"/>
+        </linearGradient>
+        <linearGradient id="dumpWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="94" y="108" width="180" height="22" rx="4" fill="#3A3A3A"/>
+      <rect x="94" y="108" width="180" height="4" fill="#555"/>
+      <rect x="6" y="54" width="92" height="80" rx="12" fill="url(#dumpYel)" stroke="#C08000" stroke-width="1.5"/>
+      <path d="M6,60 Q6,54 12,54 L92,54 Q98,54 98,60 L98,76 L6,76 Z" fill="#FFDC5A" opacity="0.6"/>
+      <rect x="14" y="62" width="38" height="30" rx="4" fill="url(#dumpWin)"/>
+      <rect x="56" y="62" width="32" height="30" rx="4" fill="url(#dumpWin)"/>
+      <rect x="14" y="62" width="38" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="56" y="62" width="32" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="52" y="62" width="4" height="30" fill="#C08000"/>
+      <rect x="20" y="96" width="30" height="12" rx="2" fill="#fff" stroke="#C08000" stroke-width="1"/>
+      <text x="35" y="105" text-anchor="middle" font-size="9" fill="#000" font-weight="900">DUMP</text>
+      <rect x="76" y="38" width="8" height="18" rx="2" fill="#555"/>
+      <rect x="74" y="36" width="12" height="4" rx="1" fill="#333"/>
+      <polygon points="94,36 274,54 274,110 94,116" fill="url(#dumpBed)" stroke="#A06000" stroke-width="2"/>
+      <polygon points="94,36 274,54 274,60 94,42" fill="#FFE08A" opacity="0.7"/>
+      <line x1="138" y1="40" x2="138" y2="115" stroke="#A06000" stroke-width="2" opacity="0.6"/>
+      <line x1="180" y1="45" x2="180" y2="115" stroke="#A06000" stroke-width="2" opacity="0.6"/>
+      <line x1="222" y1="50" x2="222" y2="115" stroke="#A06000" stroke-width="2" opacity="0.6"/>
+      <rect x="274" y="36" width="4" height="80" fill="#A06000"/>
+      <circle cx="140" cy="30" r="8" fill="#8B6B4A" stroke="#5A4530" stroke-width="1.5"/>
+      <circle cx="170" cy="24" r="6" fill="#9A7A55" stroke="#5A4530" stroke-width="1.5"/>
+      <circle cx="200" cy="32" r="9" fill="#8B6B4A" stroke="#5A4530" stroke-width="1.5"/>
+      <circle cx="230" cy="28" r="7" fill="#9A7A55" stroke="#5A4530" stroke-width="1.5"/>
+      <circle cx="260" cy="34" r="6" fill="#8B6B4A" stroke="#5A4530" stroke-width="1.5"/>
+      <circle cx="155" cy="38" r="5" fill="#6A5035"/>
+      <circle cx="215" cy="40" r="5" fill="#6A5035"/>
+      <line x1="96" y1="106" x2="122" y2="80" stroke="#777" stroke-width="8" stroke-linecap="round"/>
+      <line x1="122" y1="80" x2="148" y2="62" stroke="#999" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="96" cy="106" r="4" fill="#555"/>
+      <circle cx="122" cy="80" r="3" fill="#555"/>
+      <rect x="4" y="68" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="11" cy="75" r="4" fill="#FFF8C0"/>
+      <rect x="6" y="112" width="10" height="20" rx="2" fill="#C08000"/>
+      ${W(54, 132)} ${W(180, 132)} ${W(230, 132)}`;
+
+  } else if (t === "bus") {
+    // バス: オレンジ・たくさんの窓・行き先表示
+    s = `
+      <rect x="4" y="38" width="268" height="92" rx="16" fill="#FF8C00"/>
+      <rect x="4" y="38" width="268" height="14" rx="14" fill="#E07800"/>
+      <rect x="4" y="116" width="268" height="14" rx="6" fill="#E07800"/>
+      <rect x="18" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="58" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="98" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="138" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="178" y="50" width="32" height="30" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="18" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="58" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="98" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="138" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="178" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="216" y="48" width="46" height="34" rx="5" fill="#111" stroke="#333" stroke-width="1"/>
+      <text x="239" y="62" text-anchor="middle" font-size="9" fill="#FFE000" font-family="sans-serif" font-weight="bold">急　行</text>
+      <text x="239" y="74" text-anchor="middle" font-size="8" fill="#FF8" font-family="sans-serif">Express</text>
+      <rect x="4" y="40" width="20" height="90" rx="14" fill="#E07800"/>
+      <rect x="4" y="56" width="18" height="14" rx="5" fill="#FFE87A"/>
+      <rect x="4" y="74" width="18" height="8" rx="4" fill="#FFA040" opacity="0.8"/>
+      <rect x="254" y="56" width="14" height="14" rx="4" fill="#FF3333"/>
+      <rect x="22" y="82" width="28" height="48" rx="4" fill="#E07800" stroke="#CC6600" stroke-width="1.5"/>
+      <line x1="36" y1="82" x2="36" y2="130" stroke="#CC6600" stroke-width="1.5"/>
+      <rect x="32" y="106" width="8" height="3" rx="1" fill="#CC6600"/>
+      ${W(55, 130)} ${W(216, 130)}`;
+
+  } else if (t === "crane") {
+    // クレーン車: 黄・大きなブーム・フック・アウトリガー
+    s = `
+      <defs>
+        <linearGradient id="craneYel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFDC4D"/><stop offset="1" stop-color="#DDA000"/>
+        </linearGradient>
+        <linearGradient id="craneBoom" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFD84D"/><stop offset="0.5" stop-color="#F5B800"/><stop offset="1" stop-color="#CC9000"/>
+        </linearGradient>
+        <linearGradient id="craneWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="6" y="96" width="260" height="36" rx="5" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
+      <rect x="6" y="96" width="260" height="5" fill="#FFDC5A" opacity="0.6"/>
+      <rect x="14" y="104" width="14" height="20" rx="2" fill="#222"/>
+      <rect x="36" y="104" width="14" height="20" rx="2" fill="#222"/>
+      <rect x="58" y="104" width="14" height="20" rx="2" fill="#222"/>
+      <rect x="210" y="104" width="14" height="20" rx="2" fill="#222"/>
+      <rect x="232" y="104" width="14" height="20" rx="2" fill="#222"/>
+      <rect x="254" y="104" width="12" height="20" rx="2" fill="#222"/>
+      <rect x="6" y="60" width="88" height="48" rx="10" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
+      <rect x="6" y="60" width="88" height="8" rx="8" fill="#FFDC5A" opacity="0.6"/>
+      <rect x="14" y="68" width="38" height="28" rx="4" fill="url(#craneWin)"/>
+      <rect x="56" y="68" width="30" height="28" rx="4" fill="url(#craneWin)"/>
+      <rect x="14" y="68" width="38" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="56" y="68" width="30" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="52" y="68" width="4" height="28" fill="#B08000"/>
+      <rect x="144" y="70" width="64" height="40" rx="6" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
+      <rect x="148" y="74" width="32" height="20" rx="3" fill="url(#craneWin)"/>
+      <rect x="148" y="74" width="32" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <circle cx="198" cy="90" r="3" fill="#555"/>
+      <circle cx="176" cy="70" r="10" fill="#555" stroke="#333" stroke-width="1.5"/>
+      <circle cx="176" cy="70" r="5" fill="#888"/>
+      <rect x="175" y="60" width="2" height="12" fill="#333"/>
+      <line x1="176" y1="60" x2="60" y2="18" stroke="#666" stroke-width="14" stroke-linecap="round"/>
+      <line x1="176" y1="60" x2="60" y2="18" stroke="url(#craneBoom)" stroke-width="10" stroke-linecap="round"/>
+      <line x1="176" y1="60" x2="60" y2="18" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
+      <circle cx="130" cy="42" r="4" fill="#B08000"/>
+      <circle cx="96" cy="30" r="4" fill="#B08000"/>
+      <rect x="54" y="12" width="12" height="12" rx="2" fill="#C09000"/>
+      <circle cx="60" cy="24" r="4" fill="#444" stroke="#222" stroke-width="1"/>
+      <line x1="60" y1="28" x2="60" y2="78" stroke="#333" stroke-width="2.5"/>
+      <path d="M54,78 Q46,78 46,88 Q46,98 58,98 L62,98 Q74,98 74,88 Q74,78 66,78 L66,70" stroke="#444" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <rect x="60" y="70" width="4" height="10" fill="#333"/>
+      <line x1="112" y1="58" x2="112" y2="96" stroke="#888" stroke-width="3" opacity="0.6"/>
+      <rect x="4" y="74" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="11" cy="81" r="4" fill="#FFF8C0"/>
+      ${W(70, 132)} ${W(190, 132)}`;
+
+  } else if (t === "tanker") {
+    // タンクローリー: シルバー円筒タンク・バルブ・危険物マーク
+    s = `
+      <defs>
+        <linearGradient id="tankSv" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F0F0F0"/><stop offset="0.5" stop-color="#C8C8D0"/><stop offset="1" stop-color="#808088"/>
+        </linearGradient>
+        <linearGradient id="tankCab" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E8E8E8"/><stop offset="1" stop-color="#A0A0A8"/>
+        </linearGradient>
+        <linearGradient id="tankWin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="94" y="114" width="180" height="18" rx="3" fill="#3A3A3A"/>
+      <rect x="6" y="48" width="90" height="84" rx="12" fill="url(#tankCab)" stroke="#707078" stroke-width="1.5"/>
+      <rect x="6" y="48" width="90" height="8" rx="8" fill="#F0F0F0" opacity="0.8"/>
+      <rect x="14" y="56" width="38" height="32" rx="4" fill="url(#tankWin)"/>
+      <rect x="56" y="56" width="32" height="32" rx="4" fill="url(#tankWin)"/>
+      <rect x="14" y="56" width="38" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="56" y="56" width="32" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="52" y="56" width="4" height="32" fill="#888"/>
+      <rect x="74" y="30" width="10" height="20" rx="2" fill="#555"/>
+      <rect x="72" y="28" width="14" height="4" rx="1" fill="#333"/>
+      <rect x="94" y="52" width="180" height="68" rx="34" fill="url(#tankSv)" stroke="#606068" stroke-width="2"/>
+      <rect x="100" y="54" width="168" height="20" rx="14" fill="#fff" opacity="0.5"/>
+      <ellipse cx="94" cy="86" rx="10" ry="34" fill="#A0A0A8" stroke="#606068" stroke-width="2"/>
+      <ellipse cx="274" cy="86" rx="10" ry="34" fill="#A0A0A8" stroke="#606068" stroke-width="2"/>
+      <line x1="138" y1="52" x2="138" y2="120" stroke="#707078" stroke-width="2.5"/>
+      <line x1="186" y1="52" x2="186" y2="120" stroke="#707078" stroke-width="2.5"/>
+      <line x1="230" y1="52" x2="230" y2="120" stroke="#707078" stroke-width="2.5"/>
+      <rect x="154" y="40" width="6" height="14" rx="1" fill="#666"/>
+      <circle cx="157" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
+      <rect x="202" y="40" width="6" height="14" rx="1" fill="#666"/>
+      <circle cx="205" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
+      <rect x="250" y="40" width="6" height="14" rx="1" fill="#666"/>
+      <circle cx="253" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
+      <rect x="154" y="48" width="100" height="4" rx="1" fill="#888"/>
+      <rect x="210" y="70" width="44" height="32" rx="3" fill="#FFB300" stroke="#CC7700" stroke-width="1.5" transform="rotate(45 232 86)"/>
+      <text x="232" y="90" text-anchor="middle" font-size="14" fill="#000" font-weight="900" transform="rotate(45 232 86)">⚠</text>
+      <rect x="112" y="84" width="30" height="16" rx="2" fill="#fff" stroke="#888" stroke-width="1"/>
+      <text x="127" y="96" text-anchor="middle" font-size="11" fill="#000" font-weight="900">OIL</text>
+      <rect x="4" y="60" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="11" cy="67" r="4" fill="#FFF8C0"/>
+      <rect x="6" y="114" width="10" height="18" rx="2" fill="#888"/>
+      ${W(56, 132)} ${W(186, 132)} ${W(236, 132)}`;
+
+  } else if (t === "train") {
+    // 電車: 青・白ストライプ・パンタグラフ・レール
+    s = `
+      <rect x="10" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="36" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="62" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="88" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="114" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="140" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="166" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="192" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="218" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="244" y="134" width="8" height="14" rx="1" fill="#8B6914"/>
+      <rect x="0" y="134" width="280" height="5" rx="1" fill="#888"/>
+      <rect x="0" y="141" width="280" height="5" rx="1" fill="#888"/>
+      <rect x="4" y="36" width="272" height="98" rx="12" fill="#1E6FBF"/>
+      <rect x="4" y="86" width="272" height="16" fill="#fff"/>
+      <rect x="4" y="102" width="272" height="10" rx="4" fill="#1558A0"/>
+      <line x1="80" y1="36" x2="80" y2="20" stroke="#888" stroke-width="2"/>
+      <line x1="80" y1="20" x2="200" y2="20" stroke="#888" stroke-width="2"/>
+      <line x1="200" y1="36" x2="200" y2="20" stroke="#888" stroke-width="2"/>
+      <line x1="100" y1="24" x2="180" y2="24" stroke="#888" stroke-width="1.5"/>
+      <rect x="10" y="44" width="32" height="24" rx="5" fill="#87CEEB" opacity="0.9"/>
+      <rect x="48" y="44" width="32" height="24" rx="5" fill="#87CEEB" opacity="0.9"/>
+      <rect x="90" y="44" width="28" height="24" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="126" y="44" width="28" height="24" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="162" y="44" width="28" height="24" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="198" y="44" width="28" height="24" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="234" y="44" width="28" height="24" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="10" y="44" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="48" y="44" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="90" y="44" width="28" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="126" y="44" width="28" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="162" y="44" width="28" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="198" y="44" width="28" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="234" y="44" width="28" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="4" y="108" width="22" height="10" rx="4" fill="#FFE87A"/>
+      <line x1="84" y1="36" x2="84" y2="134" stroke="#1558A0" stroke-width="2"/>
+      <line x1="174" y1="36" x2="174" y2="134" stroke="#1558A0" stroke-width="2"/>
+      <circle cx="44" cy="134" r="10" fill="#222"/><circle cx="44" cy="134" r="5" fill="#444"/>
+      <circle cx="72" cy="134" r="10" fill="#222"/><circle cx="72" cy="134" r="5" fill="#444"/>
+      <circle cx="200" cy="134" r="10" fill="#222"/><circle cx="200" cy="134" r="5" fill="#444"/>
+      <circle cx="228" cy="134" r="10" fill="#222"/><circle cx="228" cy="134" r="5" fill="#444"/>`;
+
+  } else if (t === "ship") {
+    // ふね: 白い船体・赤いキール・操舵室・煙突・波
+    s = `
+      <defs>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5AB3DD"/><stop offset="1" stop-color="#2A70A8"/>
+        </linearGradient>
+        <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E63946"/><stop offset="1" stop-color="#9D0208"/>
+        </linearGradient>
+        <linearGradient id="shipBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DDE4EA"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="114" width="280" height="46" fill="url(#sea)"/>
+      <path d="M0,118 Q25,112 50,118 T100,118 T150,118 T200,118 T250,118 T280,118" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.7"/>
+      <path d="M0,128 Q25,122 50,128 T100,128 T150,128 T200,128 T250,128 T280,128" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <path d="M0,140 Q25,134 50,140 T100,140 T150,140 T200,140 T250,140 T280,140" stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.4"/>
+      <path d="M10,108 L270,108 L248,150 L32,150 Z" fill="url(#hull)" stroke="#6A0006" stroke-width="2"/>
+      <rect x="10" y="108" width="260" height="6" fill="#fff"/>
+      <line x1="30" y1="120" x2="250" y2="120" stroke="#fff" stroke-width="1" opacity="0.5"/>
+      <path d="M242,150 L248,150 L246,144 L244,144 Z" fill="#fff" opacity="0.8"/>
+      <circle cx="40" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="70" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="100" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="130" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="160" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="190" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="220" cy="124" r="5" fill="#FFE87A" stroke="#C09000" stroke-width="1.5"/>
+      <circle cx="40" cy="124" r="2" fill="#fff"/>
+      <circle cx="70" cy="124" r="2" fill="#fff"/>
+      <circle cx="100" cy="124" r="2" fill="#fff"/>
+      <circle cx="130" cy="124" r="2" fill="#fff"/>
+      <circle cx="160" cy="124" r="2" fill="#fff"/>
+      <circle cx="190" cy="124" r="2" fill="#fff"/>
+      <circle cx="220" cy="124" r="2" fill="#fff"/>
+      <rect x="20" y="72" width="240" height="36" rx="4" fill="url(#shipBody)" stroke="#BBB" stroke-width="1.5"/>
+      <rect x="20" y="72" width="240" height="4" fill="#F5C242"/>
+      <rect x="20" y="104" width="240" height="4" fill="#F5C242"/>
+      <rect x="30" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="56" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="82" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="108" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="152" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="178" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="204" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="230" y="82" width="20" height="16" rx="2" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="30" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="56" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="82" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="108" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="152" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="178" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="204" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="230" y="82" width="20" height="4" rx="1" fill="#fff" opacity="0.6"/>
+      <rect x="130" y="80" width="20" height="22" rx="1" fill="#8B6F47" stroke="#5A4530" stroke-width="1.5"/>
+      <rect x="132" y="82" width="16" height="3" fill="#D4A574"/>
+      <rect x="132" y="88" width="16" height="3" fill="#D4A574"/>
+      <rect x="132" y="94" width="16" height="3" fill="#D4A574"/>
+      <rect x="80" y="40" width="140" height="34" rx="4" fill="url(#shipBody)" stroke="#BBB" stroke-width="1.5"/>
+      <rect x="80" y="40" width="140" height="4" fill="#F5C242"/>
+      <rect x="86" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="106" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="126" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="146" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="166" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="186" y="50" width="16" height="18" rx="1" fill="#5AB3DD" stroke="#CCC" stroke-width="1"/>
+      <rect x="86" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="106" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="126" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="146" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="166" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="186" y="50" width="16" height="4" fill="#fff" opacity="0.6"/>
+      <rect x="145" y="12" width="30" height="30" rx="3" fill="#1A1A1A"/>
+      <rect x="145" y="12" width="30" height="6" fill="#E63946"/>
+      <rect x="145" y="20" width="30" height="3" fill="#fff"/>
+      <circle cx="160" cy="6" r="6" fill="#CCC" opacity="0.7"/>
+      <circle cx="170" cy="3" r="5" fill="#CCC" opacity="0.5"/>
+      <circle cx="180" cy="6" r="4" fill="#CCC" opacity="0.4"/>
+      <line x1="118" y1="40" x2="118" y2="8" stroke="#888" stroke-width="2"/>
+      <line x1="118" y1="8" x2="140" y2="8" stroke="#888" stroke-width="1.5"/>
+      <line x1="118" y1="8" x2="118" y2="2" stroke="#888" stroke-width="2"/>
+      <path d="M120,2 L132,4 L120,8 Z" fill="#E63946"/>
+      <rect x="200" y="20" width="18" height="22" rx="2" fill="#DDD"/>
+      <rect x="200" y="20" width="18" height="4" fill="#F5C242"/>
+      <path d="M220,32 A8 5 0 0 1 232 30" stroke="#fff" stroke-width="3" fill="none"/>
+      <path d="M225,38 A8 5 0 0 1 237 36" stroke="#fff" stroke-width="3" fill="none"/>`;
+
+  } else if (t === "airplane") {
+    // 飛行機: 白・青ストライプ・主翼・エンジン・尾翼
+    s = `
+      <circle cx="30" cy="18" r="3" fill="#CCC" opacity="0.5"/>
+      <circle cx="90" cy="8" r="4" fill="#CCC" opacity="0.4"/>
+      <circle cx="210" cy="12" r="3" fill="#CCC" opacity="0.3"/>
+      <ellipse cx="140" cy="78" rx="128" ry="21" fill="#F5F5F5" stroke="#DDD" stroke-width="1"/>
+      <ellipse cx="12" cy="78" rx="14" ry="19" fill="#E8E8E8"/>
+      <ellipse cx="268" cy="78" rx="13" ry="19" fill="#E8E8E8"/>
+      <rect x="18" y="70" width="244" height="8" fill="#1A5FBF" opacity="0.8"/>
+      <circle cx="58" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="84" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="110" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="136" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="162" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="188" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <circle cx="214" cy="72" r="6" fill="#87CEEB" opacity="0.9" stroke="#DDD" stroke-width="1"/>
+      <polygon points="85,78 225,78 245,136 58,136" fill="#E8E8E8" stroke="#CCC" stroke-width="1"/>
+      <polygon points="85,78 225,78 228,88 78,88" fill="#DDD"/>
+      <ellipse cx="108" cy="118" rx="30" ry="11" fill="#CCC" stroke="#BBB" stroke-width="1"/>
+      <ellipse cx="82" cy="118" rx="13" ry="9" fill="#AAA"/>
+      <ellipse cx="182" cy="118" rx="30" ry="11" fill="#CCC" stroke="#BBB" stroke-width="1"/>
+      <ellipse cx="208" cy="118" rx="13" ry="9" fill="#AAA"/>
+      <polygon points="246,58 268,58 268,78 240,78" fill="#DDD" stroke="#CCC" stroke-width="1"/>
+      <polygon points="238,78 268,78 274,100 243,96" fill="#E8E8E8" stroke="#CCC" stroke-width="1"/>
+      <polygon points="238,78 268,78 274,60 243,64" fill="#E8E8E8" stroke="#CCC" stroke-width="1"/>
+      <ellipse cx="24" cy="74" rx="11" ry="8" fill="#87CEEB" opacity="0.85"/>
+      <circle cx="5" cy="78" r="4" fill="#FFE87A"/>`;
+
+  } else if (t === "excavator") {
+    // ショベルカー: 黄・キャタピラ・大きなアーム・バケット
+    s = `
+      <rect x="6" y="106" width="190" height="38" rx="16" fill="#222"/>
+      <rect x="12" y="112" width="178" height="26" rx="10" fill="#333"/>
+      <circle cx="28" cy="125" r="13" fill="#444"/><circle cx="28" cy="125" r="7" fill="#333"/>
+      <circle cx="58" cy="125" r="11" fill="#444"/><circle cx="58" cy="125" r="6" fill="#333"/>
+      <circle cx="88" cy="125" r="11" fill="#444"/><circle cx="88" cy="125" r="6" fill="#333"/>
+      <circle cx="118" cy="125" r="11" fill="#444"/><circle cx="118" cy="125" r="6" fill="#333"/>
+      <circle cx="148" cy="125" r="11" fill="#444"/><circle cx="148" cy="125" r="6" fill="#333"/>
+      <circle cx="178" cy="125" r="13" fill="#444"/><circle cx="178" cy="125" r="7" fill="#333"/>
+      <rect x="16" y="74" width="162" height="36" rx="8" fill="#F5C000"/>
+      <rect x="16" y="42" width="84" height="36" rx="8" fill="#E0B000"/>
+      <rect x="16" y="42" width="84" height="10" rx="8" fill="#F5C000"/>
+      <rect x="24" y="50" width="32" height="22" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="62" y="50" width="30" height="22" rx="5" fill="#87CEEB" opacity="0.85"/>
+      <rect x="24" y="50" width="32" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="62" y="50" width="30" height="4" rx="2" fill="#fff" opacity="0.4"/>
+      <rect x="6" y="80" width="20" height="28" rx="4" fill="#D0A000"/>
+      <line x1="148" y1="78" x2="212" y2="24" stroke="#C09000" stroke-width="14" stroke-linecap="round"/>
+      <line x1="148" y1="78" x2="212" y2="24" stroke="#F0BA00" stroke-width="8" stroke-linecap="round"/>
+      <line x1="212" y1="24" x2="252" y2="70" stroke="#C09000" stroke-width="12" stroke-linecap="round"/>
+      <line x1="212" y1="24" x2="252" y2="70" stroke="#F0BA00" stroke-width="7" stroke-linecap="round"/>
+      <path d="M244,70 L266,66 L270,96 L246,100 Z" fill="#E0B000" stroke="#C09000" stroke-width="2"/>
+      <line x1="249" y1="100" x2="247" y2="113" stroke="#777" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="257" y1="100" x2="255" y2="114" stroke="#777" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="265" y1="99" x2="263" y2="112" stroke="#777" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="98" y1="74" x2="164" y2="56" stroke="#BBB" stroke-width="4" stroke-linecap="round"/>
+      <line x1="164" y1="56" x2="204" y2="36" stroke="#BBB" stroke-width="3" stroke-linecap="round"/>
+      <rect x="70" y="34" width="18" height="10" rx="4" fill="#FFD700"/>`;
+  }
+
+  svg.innerHTML = s;
+}
+
+function sayJp(text, cb) {
+  if (!window.speechSynthesis) { if (cb) cb(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP"; u.rate = 0.85; u.pitch = 1.1;
+  u.onend = () => { if (cb) cb(); };
+  setTimeout(() => window.speechSynthesis.speak(u), 300);
+}
+function sayEn(text) {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = 0.8; u.pitch = 1.15;
+  window.speechSynthesis.speak(u);
+}
+function speakQ() { sayJp("この のりものは なに？", () => sayEn("What is this vehicle?")); }
+let order=[], idx=0, correctCount=0, answered=false;
+function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const photoMap = { fire: 'fire.jpg', bus: 'bus.jpg', airplane: 'airplane.jpg', excavator: 'excavator.jpg', train: 'train.jpg', garbage: { src: 'garbage.jpg', position: 'top' } };
+
+// --- Confetti ---
+const confCanvas = document.getElementById('confettiCanvas');
+const confCtx = confCanvas.getContext('2d');
+let confParticles = [], confAnim = null;
+const CONF_COLORS = ['#FF6B6B','#FFD93D','#4ECDC4','#FF9F43','#A29BFE','#fd79a8','#55efc4'];
+function launchConfetti() {
+  confCanvas.width = window.innerWidth;
+  confCanvas.height = window.innerHeight;
+  confParticles = Array.from({length:80}, () => ({
+    x: Math.random() * confCanvas.width,
+    y: Math.random() * confCanvas.height * 0.4,
+    r: Math.random() * 7 + 4,
+    color: CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)],
+    vx: (Math.random()-0.5)*3,
+    vy: Math.random()*2+1,
+    angle: Math.random()*360,
+    spin: (Math.random()-0.5)*8,
+    life: 1
+  }));
+  if (confAnim) cancelAnimationFrame(confAnim);
+  function draw() {
+    confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
+    let alive = false;
+    confParticles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.angle += p.spin; p.life -= 0.012;
+      if (p.life > 0) { alive = true; }
+      confCtx.save();
+      confCtx.globalAlpha = Math.max(0, p.life);
+      confCtx.translate(p.x, p.y);
+      confCtx.rotate(p.angle * Math.PI/180);
+      confCtx.fillStyle = p.color;
+      confCtx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 0.5);
+      confCtx.restore();
+    });
+    if (alive) confAnim = requestAnimationFrame(draw);
+    else confCtx.clearRect(0,0,confCanvas.width,confCanvas.height);
+  }
+  draw();
+}
+
+function updateProgress() {
+  const pct = (idx / order.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function animateCarBox() {
+  const box = document.getElementById('carBox');
+  box.style.animation = 'none';
+  box.offsetHeight; // reflow
+  box.style.animation = 'slideIn 0.4s cubic-bezier(.4,1.6,.6,1)';
+}
+
+function showQ() {
+  answered=false; const car=cars[order[idx]];
+  const display = document.getElementById("carDisplay");
+  if (photoMap[car.type]) {
+    const p = photoMap[car.type];
+    const src = typeof p === 'string' ? p : p.src;
+    const pos = typeof p === 'string' ? 'center' : p.position;
+    display.innerHTML = `<img class="car-img" src="${src}" alt="${car.jp}" style="object-position:${pos}">`;
+  } else {
+    display.innerHTML = `<div class="car-svg-wrap"><svg id="carSvg" viewBox="0 0 280 160" width="100%" height="auto"></svg></div>`;
+    drawCar(document.getElementById("carSvg"), car);
+  }
+  const wrong=cars.filter((_,i)=>i!==order[idx]);
+  const choices=shuffle([car,...shuffle(wrong).slice(0,3)]);
+  document.getElementById("choices").innerHTML=choices.map(c=>`<button class="choice-btn" data-jp="${c.jp}" onclick="answer('${c.jp}','${car.jp}',this)"><span class="c-jp">${c.jp}</span><span class="c-en">${c.en}</span></button>`).join("");
+  document.getElementById("feedback").innerHTML="";
+  document.getElementById("nextBtn").style.display="none";
+  document.getElementById("qnum").textContent=idx+1;
+  updateProgress();
+  animateCarBox();
+  setTimeout(speakQ,400);
+}
+function answer(chosen,correct,btn) {
+  if(answered) return; answered=true;
+  const car=cars[order[idx]];
+  document.querySelectorAll(".choice-btn").forEach(b=>{b.style.pointerEvents="none"; if(b.dataset.jp===correct) b.classList.add("correct");});
+  if(chosen===correct) {
+    correctCount++;
+    const scoreEl = document.getElementById("correct");
+    scoreEl.textContent = correctCount;
+    scoreEl.classList.remove('popped');
+    scoreEl.offsetHeight;
+    scoreEl.classList.add('popped');
+    document.getElementById("feedback").innerHTML='<div class="fb-inner"><div class="fb-jp" style="color:#2ECC71">🎉 せいかい！すごい！</div><div class="fb-en">Great job! That\'s right!</div></div>';
+    playCorrectSound();
+    launchConfetti();
+    sayJp("せいかい！すごい！"+car.readJp,()=>sayEn(car.readEn));
+  } else {
+    btn.classList.add("wrong");
+    playWrongSound();
+    document.getElementById("feedback").innerHTML=`<div class="fb-inner"><div class="fb-jp" style="color:#E74C3C">💦 こたえは「${correct}」だよ！</div><div class="fb-en">The answer is "${car.en}"!</div></div>`;
+    sayJp("ざんねん！こたえは "+car.readJp,()=>sayEn(car.readEn));
+  }
+  if(idx<order.length-1) { document.getElementById("nextBtn").style.display="block"; } else { setTimeout(showResult,2500); }
+}
+function nextQ() { idx++; showQ(); }
+function showResult() {
+  document.getElementById("quiz").style.display="none"; document.getElementById("result").style.display="block";
+  const s=correctCount, t=order.length;
+  document.getElementById("rScore").textContent=s+" / "+t;
+  document.getElementById('progressFill').style.width = '100%';
+  const msgs=[["またちょうせんしてね！","Try again!"],["もうすこし！がんばれ！","Almost there!"],["よくできました！","Well done!"],["🎊 すごい！かんぺき！","Amazing! Perfect!"]];
+  const mi=s===t?3:s>=t*0.75?2:s>=t*0.5?1:0;
+  const starMap=["⭐","⭐⭐","⭐⭐⭐","🌟🌟🌟"];
+  document.getElementById("rStars").textContent = starMap[mi];
+  document.getElementById("rMsgJp").textContent=msgs[mi][0];
+  document.getElementById("rMsgEn").textContent=msgs[mi][1];
+  if (mi >= 2) setTimeout(launchConfetti, 300);
+  sayJp(msgs[mi][0],()=>sayEn(msgs[mi][1]));
+}
+function restart() {
+  correctCount=0; idx=0; document.getElementById("correct").textContent=0;
+  document.getElementById("result").style.display="none"; document.getElementById("quiz").style.display="block";
+  order=shuffle(cars.map((_,i)=>i)); showQ();
+}
+document.getElementById("total").textContent = cars.length;
+order=shuffle(cars.map((_,i)=>i)); showQ();
+
+// --- のりもの図鑑 ---
+let zukanIdx = 0;
+function showZukan() {
+  const car = cars[zukanIdx];
+  const display = document.getElementById("zukanDisplay");
+  if (photoMap[car.type]) {
+    const p = photoMap[car.type];
+    const src = typeof p === 'string' ? p : p.src;
+    const pos = typeof p === 'string' ? 'center' : p.position;
+    display.innerHTML = `<img class="car-img" src="${src}" alt="${car.jp}" style="object-position:${pos}">`;
+  } else {
+    display.innerHTML = `<div class="car-svg-wrap"><svg viewBox="0 0 280 160" width="100%" height="auto"></svg></div>`;
+    drawCar(display.querySelector('svg'), car);
+  }
+  document.getElementById("zukanEmoji").textContent = car.emoji;
+  document.getElementById("zukanNameJp").textContent = car.jp;
+  document.getElementById("zukanNameEn").textContent = car.en;
+  document.getElementById("zukanFact").textContent = car.fact;
+  document.getElementById("zukanCounter").textContent = (zukanIdx + 1) + " / " + cars.length;
+  const box = document.getElementById("zukanBox");
+  box.style.animation = 'none'; box.offsetHeight;
+  box.style.animation = 'slideIn 0.4s cubic-bezier(.4,1.6,.6,1)';
+}
+function zukanNext() { zukanIdx = (zukanIdx + 1) % cars.length; showZukan(); }
+function zukanPrev() { zukanIdx = (zukanIdx - 1 + cars.length) % cars.length; showZukan(); }
+
+function switchMode(mode) {
+  document.getElementById('modeQuiz').classList.toggle('active', mode === 'quiz');
+  document.getElementById('modeZukan').classList.toggle('active', mode === 'zukan');
+  document.getElementById('quiz').style.display = mode === 'quiz' ? 'block' : 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('zukan').style.display = mode === 'zukan' ? 'block' : 'none';
+  document.getElementById('scoreBar').style.display = mode === 'quiz' ? 'flex' : 'none';
+  document.getElementById('progressFill').parentElement.parentElement.style.display = mode === 'quiz' ? 'block' : 'none';
+  if (mode === 'quiz') { restart(); }
+  if (mode === 'zukan') { zukanIdx = 0; showZukan(); }
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+<script>
+const bgm = new Audio('./bgm.m4a');
+bgm.loop = true;
+bgm.volume = 0.4;
+let bgmOn = false;
+
+// --- 効果音 (Web Audio API) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playCorrectSound() {
+  // ピンポーン♪
+  const now = audioCtx.currentTime;
+  [523.25, 659.25, 783.99].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, now + i * 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now + i * 0.15);
+    osc.stop(now + i * 0.15 + 0.4);
+  });
+}
+function playWrongSound() {
+  // ブッブー
+  const now = audioCtx.currentTime;
+  [200, 160].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.25, now + i * 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.25 + 0.3);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now + i * 0.25);
+    osc.stop(now + i * 0.25 + 0.3);
+  });
+}
+
+function toggleBgm() {
+  bgmOn = !bgmOn;
+  const btn = document.getElementById('bgmBtn');
+  if (bgmOn) {
+    bgm.play();
+    btn.textContent = '🔇 BGM オフ';
+    speakQ();
+  } else {
+    bgm.pause();
+    bgm.currentTime = 0;
+    btn.textContent = '🎵 BGM オン';
+  }
+}
+</script>
+</body>
+</html>

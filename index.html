@@ -1032,6 +1032,11 @@ let bgmOn = false;
 
 // --- 効果音 (Web Audio API) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// スマホ対応: タッチで音を有効化
+document.addEventListener('touchstart', function unlockAudio() {
+  audioCtx.resume();
+  document.removeEventListener('touchstart', unlockAudio);
+}, { once: true });
 function playCorrectSound() {
   // ピンポーン♪
   const now = audioCtx.currentTime;

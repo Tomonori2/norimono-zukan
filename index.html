@@ -210,18 +210,82 @@ body {
 }
 .zukan-nav-btn:active { transform: scale(0.95); }
 .zukan-counter { font-size: 18px; font-weight: 900; color: #888; min-width: 60px; text-align: center; }
+/* --- スタート画面 --- */
+.splash {
+  text-align: center; padding: 2rem 1rem;
+  animation: slideIn 0.5s cubic-bezier(.4,1.4,.6,1);
+}
+.splash-emoji {
+  font-size: 64px; letter-spacing: 8px; margin-bottom: 12px;
+  animation: titleBob 2s ease-in-out infinite;
+}
+.splash-title {
+  font-size: 32px; font-weight: 900;
+  background: linear-gradient(90deg, #FF6B6B, #FF9F43, #FFD93D);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 4px;
+}
+.splash-sub { font-size: 14px; color: #FFB347; font-weight: 700; margin-bottom: 24px; }
+.splash-count {
+  font-size: 16px; color: #888; font-weight: 700; margin-bottom: 24px;
+  background: #fff; border-radius: 16px; padding: 12px 20px; display: inline-block;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+}
+.splash-count span { font-size: 28px; font-weight: 900; color: #FF6B6B; }
+.splash-cars {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin-bottom: 28px;
+}
+.splash-car-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  animation: slideIn 0.4s cubic-bezier(.4,1.6,.6,1);
+}
+.splash-start-btn {
+  padding: 18px 60px; font-size: 22px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #FF6B6B, #FF9F43);
+  color: #fff; cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+  animation: nextPulse 1.4s ease infinite;
+  transition: transform 0.12s;
+  margin-bottom: 12px;
+}
+.splash-start-btn:active { transform: scale(0.96); }
+.splash-zukan-btn {
+  padding: 14px 40px; font-size: 18px; font-weight: 900;
+  border: none; border-radius: 99px;
+  background: linear-gradient(90deg, #43e8d8, #4ECDC4);
+  color: #fff; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 14px rgba(78,205,196,0.3);
+  transition: transform 0.12s;
+}
+.splash-zukan-btn:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
 <canvas id="confettiCanvas"></canvas>
 <div class="wrap">
-  <div class="title">🚒 はたらくのりもの クイズ 🚌</div>
-  <div class="title-en">✨ Working Vehicles Quiz ✨</div>
-  <button class="bgm-btn" id="bgmBtn" onclick="toggleBgm()">🎵 BGM オン</button>
-  <div class="mode-bar">
-    <button class="mode-btn active" id="modeQuiz" onclick="switchMode('quiz')">🎯 クイズ</button>
-    <button class="mode-btn" id="modeZukan" onclick="switchMode('zukan')">📖 ずかん</button>
+  <div id="splash" class="splash">
+    <div class="splash-emoji">🚒 🚑 🚓 🚌</div>
+    <div class="splash-title">はたらくのりもの</div>
+    <div class="splash-sub">✨ Working Vehicles Quiz ✨</div>
+    <div class="splash-count">のりもの <span id="splashCount">18</span> しゅるい！</div>
+    <div class="splash-cars" id="splashCars"></div>
+    <button class="splash-start-btn" onclick="startQuiz()">🎯 クイズで あそぶ</button><br><br>
+    <button class="splash-zukan-btn" onclick="startZukan()">📖 ずかんを みる</button>
   </div>
+  <div id="gameArea" style="display:none;">
+    <div class="title">🚒 はたらくのりもの クイズ 🚌</div>
+    <div class="title-en">✨ Working Vehicles Quiz ✨</div>
+    <button class="bgm-btn" id="bgmBtn" onclick="toggleBgm()">🎵 BGM オン</button>
+    <div class="mode-bar">
+      <button class="mode-btn active" id="modeQuiz" onclick="switchMode('quiz')">🎯 クイズ</button>
+      <button class="mode-btn" id="modeZukan" onclick="switchMode('zukan')">📖 ずかん</button>
+      <button class="mode-btn" onclick="showSplash()">🏠 もどる</button>
+    </div>
   <div class="score-bar" id="scoreBar">
     <div class="score-item"><div class="score-num" id="correct">0</div><div class="score-label">⭐ せいかい</div></div>
     <div class="score-item"><div class="score-num" id="qnum">1</div><div class="score-label">📝 もんだい</div></div>
@@ -267,6 +331,7 @@ body {
       <span class="zukan-counter" id="zukanCounter">1 / 12</span>
       <button class="zukan-nav-btn" onclick="zukanNext()">つぎ ▶</button>
     </div>
+  </div>
   </div>
 </div>
 <script>
@@ -560,104 +625,147 @@ function drawCar(svg, car) {
       ${W(55, 130)} ${W(216, 130)}`;
 
   } else if (t === "crane") {
-    // クレーン車: 黄・大きなブーム・フック・アウトリガー
+    // クレーン車: オレンジ黄・大ブーム・フック・アウトリガー・回転台
     s = `
       <defs>
         <linearGradient id="craneYel" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#FFDC4D"/><stop offset="1" stop-color="#DDA000"/>
+          <stop offset="0" stop-color="#FF9F43"/><stop offset="1" stop-color="#E07800"/>
         </linearGradient>
-        <linearGradient id="craneBoom" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="craneBoom" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stop-color="#FFD84D"/><stop offset="0.5" stop-color="#F5B800"/><stop offset="1" stop-color="#CC9000"/>
         </linearGradient>
         <linearGradient id="craneWin" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
         </linearGradient>
       </defs>
-      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
-      <rect x="6" y="96" width="260" height="36" rx="5" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
-      <rect x="6" y="96" width="260" height="5" fill="#FFDC5A" opacity="0.6"/>
-      <rect x="14" y="104" width="14" height="20" rx="2" fill="#222"/>
-      <rect x="36" y="104" width="14" height="20" rx="2" fill="#222"/>
-      <rect x="58" y="104" width="14" height="20" rx="2" fill="#222"/>
-      <rect x="210" y="104" width="14" height="20" rx="2" fill="#222"/>
-      <rect x="232" y="104" width="14" height="20" rx="2" fill="#222"/>
-      <rect x="254" y="104" width="12" height="20" rx="2" fill="#222"/>
-      <rect x="6" y="60" width="88" height="48" rx="10" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
-      <rect x="6" y="60" width="88" height="8" rx="8" fill="#FFDC5A" opacity="0.6"/>
-      <rect x="14" y="68" width="38" height="28" rx="4" fill="url(#craneWin)"/>
-      <rect x="56" y="68" width="30" height="28" rx="4" fill="url(#craneWin)"/>
-      <rect x="14" y="68" width="38" height="4" rx="2" fill="#fff" opacity="0.5"/>
-      <rect x="56" y="68" width="30" height="4" rx="2" fill="#fff" opacity="0.5"/>
-      <rect x="52" y="68" width="4" height="28" fill="#B08000"/>
-      <rect x="144" y="70" width="64" height="40" rx="6" fill="url(#craneYel)" stroke="#B08000" stroke-width="1.5"/>
-      <rect x="148" y="74" width="32" height="20" rx="3" fill="url(#craneWin)"/>
-      <rect x="148" y="74" width="32" height="4" rx="2" fill="#fff" opacity="0.5"/>
-      <circle cx="198" cy="90" r="3" fill="#555"/>
-      <circle cx="176" cy="70" r="10" fill="#555" stroke="#333" stroke-width="1.5"/>
-      <circle cx="176" cy="70" r="5" fill="#888"/>
-      <rect x="175" y="60" width="2" height="12" fill="#333"/>
-      <line x1="176" y1="60" x2="60" y2="18" stroke="#666" stroke-width="14" stroke-linecap="round"/>
-      <line x1="176" y1="60" x2="60" y2="18" stroke="url(#craneBoom)" stroke-width="10" stroke-linecap="round"/>
-      <line x1="176" y1="60" x2="60" y2="18" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.3"/>
-      <circle cx="130" cy="42" r="4" fill="#B08000"/>
-      <circle cx="96" cy="30" r="4" fill="#B08000"/>
-      <rect x="54" y="12" width="12" height="12" rx="2" fill="#C09000"/>
-      <circle cx="60" cy="24" r="4" fill="#444" stroke="#222" stroke-width="1"/>
-      <line x1="60" y1="28" x2="60" y2="78" stroke="#333" stroke-width="2.5"/>
-      <path d="M54,78 Q46,78 46,88 Q46,98 58,98 L62,98 Q74,98 74,88 Q74,78 66,78 L66,70" stroke="#444" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <rect x="60" y="70" width="4" height="10" fill="#333"/>
-      <line x1="112" y1="58" x2="112" y2="96" stroke="#888" stroke-width="3" opacity="0.6"/>
-      <rect x="4" y="74" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
-      <circle cx="11" cy="81" r="4" fill="#FFF8C0"/>
-      ${W(70, 132)} ${W(190, 132)}`;
+      <ellipse cx="140" cy="148" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="6" y="96" width="268" height="38" rx="6" fill="url(#craneYel)" stroke="#C06000" stroke-width="1.5"/>
+      <rect x="6" y="96" width="268" height="6" fill="#FFB060" opacity="0.5"/>
+      <rect x="6" y="128" width="20" height="14" rx="2" fill="#555"/>
+      <rect x="0" y="136" width="32" height="8" rx="2" fill="#666"/>
+      <rect x="248" y="128" width="20" height="14" rx="2" fill="#555"/>
+      <rect x="242" y="136" width="32" height="8" rx="2" fill="#666"/>
+      <rect x="6" y="60" width="88" height="40" rx="10" fill="url(#craneYel)" stroke="#C06000" stroke-width="1.5"/>
+      <rect x="6" y="60" width="88" height="8" rx="10" fill="#FFB060" opacity="0.5"/>
+      <rect x="14" y="68" width="36" height="26" rx="4" fill="url(#craneWin)"/>
+      <rect x="54" y="68" width="30" height="26" rx="4" fill="url(#craneWin)"/>
+      <rect x="14" y="68" width="36" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="54" y="68" width="30" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="50" y="68" width="4" height="26" fill="#C06000"/>
+      <rect x="4" y="72" width="12" height="12" rx="3" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="10" cy="78" r="3.5" fill="#FFF8C0"/>
+      <ellipse cx="168" cy="96" rx="40" ry="8" fill="#444" stroke="#333" stroke-width="1.5"/>
+      <rect x="136" y="60" width="64" height="38" rx="6" fill="url(#craneYel)" stroke="#C06000" stroke-width="1.5"/>
+      <rect x="142" y="66" width="28" height="20" rx="3" fill="url(#craneWin)"/>
+      <rect x="142" y="66" width="28" height="4" rx="2" fill="#fff" opacity="0.5"/>
+      <circle cx="190" cy="78" r="3" fill="#555"/>
+      <circle cx="168" cy="60" r="12" fill="#555" stroke="#333" stroke-width="2"/>
+      <circle cx="168" cy="60" r="6" fill="#888"/>
+      <circle cx="168" cy="60" r="2" fill="#BBB"/>
+      <line x1="168" y1="48" x2="44" y2="6" stroke="#777" stroke-width="16" stroke-linecap="round"/>
+      <line x1="168" y1="48" x2="44" y2="6" stroke="url(#craneBoom)" stroke-width="12" stroke-linecap="round"/>
+      <line x1="168" y1="48" x2="44" y2="6" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+      <line x1="168" y1="56" x2="80" y2="22" stroke="#333" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <line x1="168" y1="56" x2="126" y2="18" stroke="#333" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <rect x="38" y="0" width="12" height="14" rx="3" fill="#C09000" stroke="#A07000" stroke-width="1"/>
+      <circle cx="44" cy="14" r="5" fill="#555" stroke="#333" stroke-width="1.5"/>
+      <circle cx="44" cy="14" r="2" fill="#999"/>
+      <line x1="44" y1="19" x2="44" y2="68" stroke="#333" stroke-width="2.5"/>
+      <line x1="44" y1="19" x2="44" y2="68" stroke="#555" stroke-width="1" stroke-dasharray="3 5"/>
+      <path d="M38,68 L34,72 Q30,80 36,86 Q42,92 48,86 Q54,80 50,72 L46,68" stroke="#E53935" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <line x1="40" y1="86" x2="48" y2="86" stroke="#E53935" stroke-width="2"/>
+      <rect x="102" y="104" width="24" height="10" rx="2" fill="#333"/>
+      <rect x="106" y="80" width="16" height="18" rx="2" fill="#555"/>
+      <circle cx="114" cy="88" r="4" fill="#888"/>
+      ${W(50, 136)} ${W(224, 136)}`;
 
   } else if (t === "tanker") {
-    // タンクローリー: シルバー円筒タンク・バルブ・危険物マーク
+    // タンクローリー: リアルなシルバー円筒タンク・キャブ・ホース・危険物マーク
     s = `
       <defs>
         <linearGradient id="tankSv" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#F0F0F0"/><stop offset="0.5" stop-color="#C8C8D0"/><stop offset="1" stop-color="#808088"/>
+          <stop offset="0" stop-color="#F8F8FA"/><stop offset="0.3" stop-color="#D8D8E0"/><stop offset="0.5" stop-color="#B0B0B8"/><stop offset="0.7" stop-color="#D0D0D8"/><stop offset="1" stop-color="#707078"/>
         </linearGradient>
         <linearGradient id="tankCab" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#E8E8E8"/><stop offset="1" stop-color="#A0A0A8"/>
+          <stop offset="0" stop-color="#F0F0F2"/><stop offset="1" stop-color="#909098"/>
         </linearGradient>
         <linearGradient id="tankWin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#6BB8DD"/>
+          <stop offset="0" stop-color="#B8E0F5"/><stop offset="1" stop-color="#5AA8D0"/>
+        </linearGradient>
+        <linearGradient id="tankEnd" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#888890"/><stop offset="0.5" stop-color="#C0C0C8"/><stop offset="1" stop-color="#888890"/>
         </linearGradient>
       </defs>
-      <ellipse cx="140" cy="144" rx="130" ry="4" fill="#000" opacity="0.12"/>
-      <rect x="94" y="114" width="180" height="18" rx="3" fill="#3A3A3A"/>
-      <rect x="6" y="48" width="90" height="84" rx="12" fill="url(#tankCab)" stroke="#707078" stroke-width="1.5"/>
-      <rect x="6" y="48" width="90" height="8" rx="8" fill="#F0F0F0" opacity="0.8"/>
-      <rect x="14" y="56" width="38" height="32" rx="4" fill="url(#tankWin)"/>
-      <rect x="56" y="56" width="32" height="32" rx="4" fill="url(#tankWin)"/>
-      <rect x="14" y="56" width="38" height="5" rx="2" fill="#fff" opacity="0.5"/>
-      <rect x="56" y="56" width="32" height="5" rx="2" fill="#fff" opacity="0.5"/>
-      <rect x="52" y="56" width="4" height="32" fill="#888"/>
-      <rect x="74" y="30" width="10" height="20" rx="2" fill="#555"/>
-      <rect x="72" y="28" width="14" height="4" rx="1" fill="#333"/>
-      <rect x="94" y="52" width="180" height="68" rx="34" fill="url(#tankSv)" stroke="#606068" stroke-width="2"/>
-      <rect x="100" y="54" width="168" height="20" rx="14" fill="#fff" opacity="0.5"/>
-      <ellipse cx="94" cy="86" rx="10" ry="34" fill="#A0A0A8" stroke="#606068" stroke-width="2"/>
-      <ellipse cx="274" cy="86" rx="10" ry="34" fill="#A0A0A8" stroke="#606068" stroke-width="2"/>
-      <line x1="138" y1="52" x2="138" y2="120" stroke="#707078" stroke-width="2.5"/>
-      <line x1="186" y1="52" x2="186" y2="120" stroke="#707078" stroke-width="2.5"/>
-      <line x1="230" y1="52" x2="230" y2="120" stroke="#707078" stroke-width="2.5"/>
-      <rect x="154" y="40" width="6" height="14" rx="1" fill="#666"/>
-      <circle cx="157" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
-      <rect x="202" y="40" width="6" height="14" rx="1" fill="#666"/>
-      <circle cx="205" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
-      <rect x="250" y="40" width="6" height="14" rx="1" fill="#666"/>
-      <circle cx="253" cy="40" r="5" fill="#888" stroke="#444" stroke-width="1"/>
-      <rect x="154" y="48" width="100" height="4" rx="1" fill="#888"/>
-      <rect x="210" y="70" width="44" height="32" rx="3" fill="#FFB300" stroke="#CC7700" stroke-width="1.5" transform="rotate(45 232 86)"/>
-      <text x="232" y="90" text-anchor="middle" font-size="14" fill="#000" font-weight="900" transform="rotate(45 232 86)">⚠</text>
-      <rect x="112" y="84" width="30" height="16" rx="2" fill="#fff" stroke="#888" stroke-width="1"/>
-      <text x="127" y="96" text-anchor="middle" font-size="11" fill="#000" font-weight="900">OIL</text>
-      <rect x="4" y="60" width="14" height="14" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
-      <circle cx="11" cy="67" r="4" fill="#FFF8C0"/>
-      <rect x="6" y="114" width="10" height="18" rx="2" fill="#888"/>
-      ${W(56, 132)} ${W(186, 132)} ${W(236, 132)}`;
+      <!-- 影 -->
+      <ellipse cx="140" cy="148" rx="132" ry="5" fill="#000" opacity="0.12"/>
+      <!-- フレーム -->
+      <rect x="88" y="118" width="186" height="14" rx="2" fill="#3A3A3A"/>
+      <rect x="88" y="120" width="186" height="3" fill="#555"/>
+      <!-- キャブ（運転席） -->
+      <rect x="4" y="46" width="86" height="86" rx="10" fill="url(#tankCab)" stroke="#707078" stroke-width="1.5"/>
+      <rect x="4" y="46" width="86" height="6" rx="6" fill="#F0F0F0" opacity="0.7"/>
+      <!-- バンパー -->
+      <rect x="0" y="118" width="92" height="10" rx="3" fill="#555" stroke="#333" stroke-width="1"/>
+      <rect x="2" y="120" width="88" height="3" fill="#777"/>
+      <!-- フロントウィンドウ -->
+      <rect x="12" y="54" width="36" height="34" rx="4" fill="url(#tankWin)" stroke="#889" stroke-width="1"/>
+      <rect x="54" y="54" width="30" height="34" rx="4" fill="url(#tankWin)" stroke="#889" stroke-width="1"/>
+      <rect x="12" y="54" width="36" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="54" y="54" width="30" height="5" rx="2" fill="#fff" opacity="0.5"/>
+      <rect x="50" y="54" width="3" height="34" fill="#707078"/>
+      <!-- ミラー -->
+      <rect x="0" y="56" width="8" height="16" rx="2" fill="#666" stroke="#444" stroke-width="1"/>
+      <rect x="1" y="58" width="6" height="12" rx="1" fill="#8BC0DD"/>
+      <!-- 排気管 -->
+      <rect x="76" y="28" width="8" height="20" rx="2" fill="#555"/>
+      <rect x="74" y="26" width="12" height="4" rx="1" fill="#333"/>
+      <!-- ヘッドライト -->
+      <rect x="2" y="100" width="12" height="10" rx="3" fill="#FFE87A" stroke="#C09000" stroke-width="1"/>
+      <circle cx="8" cy="105" r="3" fill="#FFF8C0"/>
+      <!-- テールライト -->
+      <rect x="272" y="106" width="6" height="10" rx="2" fill="#FF3030" stroke="#AA0000" stroke-width="1"/>
+      <!-- タンク本体（円筒） -->
+      <rect x="96" y="48" width="178" height="72" rx="36" fill="url(#tankSv)" stroke="#606068" stroke-width="2"/>
+      <!-- タンクハイライト -->
+      <rect x="104" y="50" width="162" height="18" rx="12" fill="#fff" opacity="0.45"/>
+      <!-- タンク端面（楕円キャップ） -->
+      <ellipse cx="96" cy="84" rx="8" ry="36" fill="url(#tankEnd)" stroke="#606068" stroke-width="1.5"/>
+      <ellipse cx="274" cy="84" rx="8" ry="36" fill="url(#tankEnd)" stroke="#606068" stroke-width="1.5"/>
+      <!-- タンク仕切りバンド -->
+      <line x1="140" y1="48" x2="140" y2="120" stroke="#808088" stroke-width="3"/>
+      <line x1="188" y1="48" x2="188" y2="120" stroke="#808088" stroke-width="3"/>
+      <line x1="234" y1="48" x2="234" y2="120" stroke="#808088" stroke-width="3"/>
+      <!-- バンドリベット -->
+      <circle cx="140" cy="52" r="2" fill="#999"/><circle cx="140" cy="116" r="2" fill="#999"/>
+      <circle cx="188" cy="52" r="2" fill="#999"/><circle cx="188" cy="116" r="2" fill="#999"/>
+      <circle cx="234" cy="52" r="2" fill="#999"/><circle cx="234" cy="116" r="2" fill="#999"/>
+      <!-- 上部ハッチ・バルブ -->
+      <rect x="152" y="38" width="8" height="12" rx="1" fill="#666"/>
+      <circle cx="156" cy="36" r="6" fill="#999" stroke="#555" stroke-width="1.5"/>
+      <circle cx="156" cy="36" r="2.5" fill="#777"/>
+      <rect x="200" y="38" width="8" height="12" rx="1" fill="#666"/>
+      <circle cx="204" cy="36" r="6" fill="#999" stroke="#555" stroke-width="1.5"/>
+      <circle cx="204" cy="36" r="2.5" fill="#777"/>
+      <rect x="248" y="38" width="8" height="12" rx="1" fill="#666"/>
+      <circle cx="252" cy="36" r="6" fill="#999" stroke="#555" stroke-width="1.5"/>
+      <circle cx="252" cy="36" r="2.5" fill="#777"/>
+      <!-- バルブ間配管 -->
+      <rect x="156" y="44" width="96" height="3" rx="1" fill="#888"/>
+      <!-- 危険物マーク（黄色ダイヤ） -->
+      <rect x="210" y="68" width="40" height="30" rx="2" fill="#FFB300" stroke="#CC7700" stroke-width="1.5" transform="rotate(45 230 83)"/>
+      <text x="230" y="88" text-anchor="middle" font-size="13" fill="#000" font-weight="900" transform="rotate(45 230 83)">⚠</text>
+      <!-- OILラベル -->
+      <rect x="112" y="78" width="32" height="18" rx="3" fill="#fff" stroke="#888" stroke-width="1"/>
+      <text x="128" y="92" text-anchor="middle" font-size="12" fill="#C00" font-weight="900">OIL</text>
+      <!-- 後部ホース接続口 -->
+      <circle cx="270" cy="118" r="5" fill="#777" stroke="#444" stroke-width="1"/>
+      <circle cx="270" cy="118" r="2" fill="#555"/>
+      <rect x="270" y="116" width="10" height="4" rx="1" fill="#666"/>
+      <!-- マッドフラップ -->
+      <rect x="86" y="132" width="10" height="12" rx="1" fill="#333"/>
+      <rect x="268" y="132" width="10" height="12" rx="1" fill="#333"/>
+      <!-- タイヤ -->
+      ${W(46, 136)} ${W(180, 136)} ${W(230, 136)}`;
 
   } else if (t === "train") {
     // 電車: 青・白ストライプ・パンタグラフ・レール
@@ -878,36 +986,54 @@ function drawCar(svg, car) {
       ${W(54, 132)} ${W(210, 132)} ${W(252, 132)}`;
 
   } else if (t === "tractor") {
-    // トラクター: 緑ボディ・大きな後輪・小さな前輪
+    // トラクター: 赤ボディ・大きな後輪・小さな前輪・煙突・屋根
     s = `
       <defs>
         <linearGradient id="tracBody" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#4CAF50"/><stop offset="1" stop-color="#2E7D32"/>
+          <stop offset="0" stop-color="#E53935"/><stop offset="1" stop-color="#C62828"/>
+        </linearGradient>
+        <linearGradient id="tracHood" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#EF5350"/><stop offset="1" stop-color="#D32F2F"/>
         </linearGradient>
       </defs>
-      <ellipse cx="140" cy="148" rx="130" ry="4" fill="#000" opacity="0.12"/>
-      <rect x="60" y="50" width="120" height="70" rx="10" fill="url(#tracBody)" stroke="#1B5E20" stroke-width="1.5"/>
-      <rect x="60" y="50" width="120" height="10" rx="10" fill="#66BB6A"/>
-      <rect x="70" y="58" width="40" height="30" rx="4" fill="#B8E0F5"/>
-      <rect x="70" y="58" width="40" height="5" rx="2" fill="#fff" opacity="0.5"/>
-      <rect x="120" y="56" width="50" height="18" rx="4" fill="#333"/>
-      <rect x="126" y="44" width="8" height="14" rx="2" fill="#666"/>
-      <circle cx="130" cy="40" r="5" fill="#444"/>
-      <circle cx="130" cy="40" r="2" fill="#999"/>
-      <rect x="30" y="80" width="36" height="24" rx="4" fill="#FFD54F" stroke="#F9A825" stroke-width="1.5"/>
-      <rect x="36" y="84" width="10" height="16" rx="2" fill="#FFF9C4"/>
-      <rect x="48" y="84" width="10" height="16" rx="2" fill="#FFF9C4"/>
-      <circle cx="80" cy="108" r="10" fill="#1a1a1a"/>
-      <circle cx="80" cy="108" r="7" fill="#444"/>
-      <circle cx="80" cy="108" r="3" fill="#888"/>
-      <rect x="168" y="70" width="14" height="50" rx="4" fill="#333"/>
-      <circle cx="190" cy="110" r="36" fill="#1a1a1a"/>
-      <circle cx="190" cy="110" r="28" fill="#444"/>
-      <circle cx="190" cy="110" r="8" fill="#888"/>
-      <line x1="190" y1="82" x2="190" y2="138" stroke="#666" stroke-width="3"/>
-      <line x1="162" y1="110" x2="218" y2="110" stroke="#666" stroke-width="3"/>
-      <line x1="170" y1="90" x2="210" y2="130" stroke="#666" stroke-width="3"/>
-      <line x1="210" y1="90" x2="170" y2="130" stroke="#666" stroke-width="3"/>`;
+      <ellipse cx="140" cy="150" rx="130" ry="4" fill="#000" opacity="0.12"/>
+      <rect x="40" y="52" width="100" height="78" rx="10" fill="url(#tracBody)" stroke="#B71C1C" stroke-width="1.5"/>
+      <rect x="40" y="52" width="100" height="10" rx="10" fill="#EF5350"/>
+      <rect x="36" y="38" width="108" height="16" rx="4" fill="#333"/>
+      <rect x="42" y="40" width="50" height="12" rx="3" fill="#87CEEB" opacity="0.9"/>
+      <rect x="96" y="40" width="42" height="12" rx="3" fill="#87CEEB" opacity="0.9"/>
+      <rect x="42" y="40" width="50" height="3" rx="1" fill="#fff" opacity="0.5"/>
+      <rect x="96" y="40" width="42" height="3" rx="1" fill="#fff" opacity="0.5"/>
+      <rect x="92" y="40" width="4" height="12" fill="#222"/>
+      <rect x="140" y="52" width="100" height="50" rx="8" fill="url(#tracHood)" stroke="#B71C1C" stroke-width="1.5"/>
+      <rect x="140" y="52" width="100" height="8" rx="8" fill="#EF5350"/>
+      <line x1="160" y1="60" x2="160" y2="100" stroke="#C62828" stroke-width="1.5"/>
+      <line x1="180" y1="60" x2="180" y2="100" stroke="#C62828" stroke-width="1.5"/>
+      <line x1="200" y1="60" x2="200" y2="100" stroke="#C62828" stroke-width="1.5"/>
+      <line x1="220" y1="60" x2="220" y2="100" stroke="#C62828" stroke-width="1.5"/>
+      <rect x="224" y="62" width="14" height="16" rx="4" fill="#FFE87A" stroke="#E0C020" stroke-width="1"/>
+      <circle cx="231" cy="70" r="4" fill="#FFF8C0"/>
+      <rect x="156" y="28" width="10" height="26" rx="3" fill="#555"/>
+      <rect x="154" y="22" width="14" height="8" rx="3" fill="#444"/>
+      <circle cx="161" cy="20" r="4" fill="#999" opacity="0.6"/>
+      <circle cx="167" cy="17" r="3" fill="#999" opacity="0.4"/>
+      <rect x="50" y="90" width="30" height="16" rx="3" fill="#fff" stroke="#B71C1C" stroke-width="1"/>
+      <text x="65" y="103" text-anchor="middle" font-size="10" fill="#C62828" font-weight="900">FARM</text>
+      <circle cx="70" cy="118" r="14" fill="#1a1a1a"/>
+      <circle cx="70" cy="118" r="10" fill="#555"/>
+      <circle cx="70" cy="118" r="4" fill="#999"/>
+      <line x1="70" y1="108" x2="70" y2="128" stroke="#777" stroke-width="2"/>
+      <line x1="60" y1="118" x2="80" y2="118" stroke="#777" stroke-width="2"/>
+      <circle cx="196" cy="108" r="40" fill="#1a1a1a"/>
+      <circle cx="196" cy="108" r="32" fill="#555"/>
+      <circle cx="196" cy="108" r="10" fill="#999"/>
+      <line x1="196" y1="76" x2="196" y2="140" stroke="#777" stroke-width="3"/>
+      <line x1="164" y1="108" x2="228" y2="108" stroke="#777" stroke-width="3"/>
+      <line x1="173" y1="85" x2="219" y2="131" stroke="#777" stroke-width="3"/>
+      <line x1="219" y1="85" x2="173" y2="131" stroke="#777" stroke-width="3"/>
+      <rect x="140" y="100" width="16" height="10" rx="2" fill="#333"/>
+      <rect x="142" y="104" width="3" height="22" rx="1" fill="#444"/>
+      <rect x="151" y="104" width="3" height="22" rx="1" fill="#444"/>`;
 
   } else if (t === "motorcycle") {
     // バイク: 赤ボディ・2輪
@@ -1197,7 +1323,6 @@ function restart() {
   order=shuffle(cars.map((_,i)=>i)); showQ();
 }
 document.getElementById("total").textContent = cars.length;
-order=shuffle(cars.map((_,i)=>i)); showQ();
 
 // --- のりもの図鑑 ---
 let zukanIdx = 0;
@@ -1236,6 +1361,34 @@ function switchMode(mode) {
   if (mode === 'quiz') { restart(); }
   if (mode === 'zukan') { zukanIdx = 0; showZukan(); }
 }
+
+// --- スタート画面 ---
+function initSplash() {
+  document.getElementById('splashCount').textContent = cars.length;
+  const container = document.getElementById('splashCars');
+  container.innerHTML = cars.map((c, i) =>
+    `<div class="splash-car-icon" style="animation-delay:${i * 0.05}s">${c.emoji}</div>`
+  ).join('');
+}
+function startQuiz() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  switchMode('quiz');
+}
+function startZukan() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  switchMode('zukan');
+}
+function showSplash() {
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('splash').style.display = 'block';
+  document.getElementById('splash').style.animation = 'none';
+  document.getElementById('splash').offsetHeight;
+  document.getElementById('splash').style.animation = 'slideIn 0.5s cubic-bezier(.4,1.4,.6,1)';
+  initSplash();
+}
+initSplash();
 </script>
 <script>
 if ('serviceWorker' in navigator) {

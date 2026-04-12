@@ -1030,43 +1030,38 @@ bgm.loop = true;
 bgm.volume = 0.4;
 let bgmOn = false;
 
-// --- 効果音 (Web Audio API) ---
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-// スマホ対応: タッチで音を有効化
-document.addEventListener('touchstart', function unlockAudio() {
-  audioCtx.resume();
-  document.removeEventListener('touchstart', unlockAudio);
-}, { once: true });
-function playCorrectSound() {
-  // ピンポーン♪
-  const now = audioCtx.currentTime;
-  [523.25, 659.25, 783.99].forEach((freq, i) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.3, now + i * 0.15);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(now + i * 0.15);
-    osc.stop(now + i * 0.15 + 0.4);
+// --- 効果音 (WAV生成 → Audio要素で再生 = BGMと同じ方式) ---
+function makeWav(freq1, freq2, freq3, type) {
+  const sr = 22050, dur = 0.35, gap = 0.12;
+  const freqs = freq3 ? [freq1,freq2,freq3] : [freq1,freq2];
+  const total = Math.ceil(sr * (freqs.length * dur + (freqs.length-1) * gap));
+  const buf = new Float32Array(total);
+  freqs.forEach((f, i) => {
+    const start = Math.floor(i * (dur + gap) * sr);
+    for (let j = 0; j < Math.floor(dur * sr); j++) {
+      const t = j / sr;
+      const env = Math.max(0, 1 - t / dur);
+      let val = Math.sin(2 * Math.PI * f * t);
+      if (type === 'square') val = val > 0 ? 1 : -1;
+      buf[start + j] = val * env * 0.4;
+    }
   });
+  const samples = buf.length;
+  const wavBuf = new ArrayBuffer(44 + samples * 2);
+  const view = new DataView(wavBuf);
+  const writeStr = (o,s) => { for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
+  writeStr(0,'RIFF'); view.setUint32(4,36+samples*2,true); writeStr(8,'WAVE');
+  writeStr(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
+  view.setUint16(22,1,true); view.setUint32(24,sr,true); view.setUint32(28,sr*2,true);
+  view.setUint16(32,2,true); view.setUint16(34,16,true);
+  writeStr(36,'data'); view.setUint32(40,samples*2,true);
+  for(let i=0;i<samples;i++) { view.setInt16(44+i*2, Math.max(-32768,Math.min(32767,buf[i]*32767)),true); }
+  return URL.createObjectURL(new Blob([wavBuf],{type:'audio/wav'}));
 }
-function playWrongSound() {
-  // ブッブー
-  const now = audioCtx.currentTime;
-  [200, 160].forEach((freq, i) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.25, now + i * 0.25);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.25 + 0.3);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(now + i * 0.25);
-    osc.stop(now + i * 0.25 + 0.3);
-  });
-}
+const correctSoundUrl = makeWav(523.25, 659.25, 783.99, 'sine');
+const wrongSoundUrl = makeWav(200, 160, 0, 'square');
+function playCorrectSound() { const a = new Audio(correctSoundUrl); a.volume = 0.5; a.play(); }
+function playWrongSound() { const a = new Audio(wrongSoundUrl); a.volume = 0.5; a.play(); }
 
 function toggleBgm() {
   bgmOn = !bgmOn;

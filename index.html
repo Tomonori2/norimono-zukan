@@ -259,7 +259,8 @@ body {
       <div class="zukan-name-jp" id="zukanNameJp"></div>
       <div class="zukan-name-en" id="zukanNameEn"></div>
       <div class="zukan-fact" id="zukanFact"></div>
-      <button class="speak-btn" onclick="sayJp(cars[zukanIdx].fact)">🔊 せつめいを きく</button>
+      <button class="speak-btn" onclick="playVehicleSound(cars[zukanIdx].type)">🔊 おとを きく</button>
+      <button class="speak-btn" onclick="sayJp(cars[zukanIdx].fact)" style="margin-top:6px">📖 せつめいを きく</button>
     </div>
     <div class="zukan-nav">
       <button class="zukan-nav-btn" onclick="zukanPrev()">◀ まえ</button>
@@ -963,11 +964,13 @@ function answer(chosen,correct,btn) {
     document.getElementById("feedback").innerHTML='<div class="fb-inner"><div class="fb-jp" style="color:#2ECC71">🎉 せいかい！すごい！</div><div class="fb-en">Great job! That\'s right!</div></div>';
     playCorrectSound();
     launchConfetti();
+    setTimeout(() => playVehicleSound(car.type), 600);
     sayJp("せいかい！すごい！"+car.readJp,()=>sayEn(car.readEn));
   } else {
     btn.classList.add("wrong");
     playWrongSound();
     document.getElementById("feedback").innerHTML=`<div class="fb-inner"><div class="fb-jp" style="color:#E74C3C">💦 こたえは「${correct}」だよ！</div><div class="fb-en">The answer is "${car.en}"!</div></div>`;
+    setTimeout(() => playVehicleSound(car.type), 600);
     sayJp("ざんねん！こたえは "+car.readJp,()=>sayEn(car.readEn));
   }
   if(idx<order.length-1) { document.getElementById("nextBtn").style.display="block"; } else { setTimeout(showResult,2500); }
@@ -1076,6 +1079,141 @@ const correctSoundUrl = makeWav(523.25, 659.25, 783.99, 'sine');
 const wrongSoundUrl = makeWav(200, 160, 0, 'square');
 function playCorrectSound() { const a = new Audio(correctSoundUrl); a.volume = 0.5; a.play(); }
 function playWrongSound() { const a = new Audio(wrongSoundUrl); a.volume = 0.5; a.play(); }
+
+// --- のりもの効果音 ---
+function makeVehicleSound(type) {
+  const sr = 22050;
+  let buf;
+  if (type === 'fire') {
+    // 消防車サイレン: ウーーウーー（上下する音）
+    const dur = 1.2; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const freq = 600 + 200 * Math.sin(2 * Math.PI * 2 * t);
+      buf[i] = Math.sin(2 * Math.PI * freq * t) * 0.35;
+    }
+  } else if (type === 'ambulance') {
+    // 救急車: ピーポーピーポー（2音交互）
+    const dur = 1.4; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const cycle = Math.floor(t / 0.35) % 2;
+      const freq = cycle === 0 ? 960 : 770;
+      buf[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
+    }
+  } else if (type === 'police') {
+    // パトカー: ウーウー（速い上下）
+    const dur = 1.2; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const freq = 700 + 300 * Math.sin(2 * Math.PI * 4 * t);
+      buf[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
+    }
+  } else if (type === 'garbage') {
+    // ごみ収集車: メロディー音（ピロピロ）
+    const dur = 1.0; buf = new Float32Array(Math.ceil(sr * dur));
+    const notes = [523, 587, 659, 698, 659, 587, 523, 0];
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const ni = Math.floor(t / (dur / notes.length));
+      const freq = notes[Math.min(ni, notes.length - 1)];
+      buf[i] = freq ? Math.sin(2 * Math.PI * freq * t) * 0.3 : 0;
+    }
+  } else if (type === 'dump') {
+    // ダンプカー: ブロロロ（低いエンジン音）
+    const dur = 1.0; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const env = Math.max(0, 1 - t / dur * 0.5);
+      buf[i] = (Math.sin(2 * Math.PI * 80 * t) + Math.sin(2 * Math.PI * 120 * t) * 0.5 + (Math.random() - 0.5) * 0.3) * 0.25 * env;
+    }
+  } else if (type === 'bus') {
+    // バス: プップー（クラクション）
+    const dur = 0.8; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const on = t < 0.25 || (t > 0.35 && t < 0.7);
+      buf[i] = on ? (Math.sin(2 * Math.PI * 340 * t) + Math.sin(2 * Math.PI * 420 * t)) * 0.2 : 0;
+    }
+  } else if (type === 'crane') {
+    // クレーン車: ガシャン（金属音）
+    const dur = 0.8; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const env = Math.exp(-t * 6);
+      buf[i] = (Math.sin(2 * Math.PI * 200 * t) + Math.sin(2 * Math.PI * 317 * t) + Math.sin(2 * Math.PI * 503 * t)) * 0.2 * env;
+    }
+  } else if (type === 'tanker') {
+    // タンクローリー: ブーン（太いホーン）
+    const dur = 1.0; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const on = t < 0.8;
+      buf[i] = on ? (Math.sin(2 * Math.PI * 180 * t) + Math.sin(2 * Math.PI * 270 * t)) * 0.25 : 0;
+    }
+  } else if (type === 'train') {
+    // 電車: ガタンゴトン（リズミカル）
+    const dur = 1.2; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const beat = Math.floor(t / 0.3) % 2;
+      const click = (t % 0.3) < 0.05;
+      const freq = beat === 0 ? 150 : 120;
+      buf[i] = click ? (Math.random() - 0.5) * 0.5 : Math.sin(2 * Math.PI * freq * t) * 0.15;
+    }
+  } else if (type === 'ship') {
+    // 船: ボーーー（汽笛）
+    const dur = 1.5; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const env = t < 0.1 ? t / 0.1 : t > 1.3 ? Math.max(0, (1.5 - t) / 0.2) : 1;
+      buf[i] = (Math.sin(2 * Math.PI * 150 * t) + Math.sin(2 * Math.PI * 225 * t) * 0.6) * 0.3 * env;
+    }
+  } else if (type === 'airplane') {
+    // 飛行機: キーーン（ジェット音）
+    const dur = 1.2; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const freq = 800 + t * 600;
+      const env = t < 0.1 ? t / 0.1 : Math.max(0, 1 - (t - 0.1) / 1.1);
+      buf[i] = (Math.sin(2 * Math.PI * freq * t) * 0.15 + (Math.random() - 0.5) * 0.2) * env;
+    }
+  } else if (type === 'excavator') {
+    // ショベルカー: ガガガ（油圧音）
+    const dur = 1.0; buf = new Float32Array(Math.ceil(sr * dur));
+    for (let i = 0; i < buf.length; i++) {
+      const t = i / sr;
+      const pulse = Math.sin(2 * Math.PI * 8 * t) > 0 ? 1 : 0.3;
+      buf[i] = (Math.sin(2 * Math.PI * 100 * t) + (Math.random() - 0.5) * 0.4) * 0.2 * pulse;
+    }
+  } else {
+    return null;
+  }
+  // WAV化
+  const samples = buf.length;
+  const wavBuf = new ArrayBuffer(44 + samples * 2);
+  const view = new DataView(wavBuf);
+  const ws = (o,s) => { for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
+  ws(0,'RIFF'); view.setUint32(4,36+samples*2,true); ws(8,'WAVE');
+  ws(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true);
+  view.setUint16(22,1,true); view.setUint32(24,sr,true); view.setUint32(28,sr*2,true);
+  view.setUint16(32,2,true); view.setUint16(34,16,true);
+  ws(36,'data'); view.setUint32(40,samples*2,true);
+  for(let i=0;i<samples;i++) { view.setInt16(44+i*2, Math.max(-32768,Math.min(32767,buf[i]*32767)),true); }
+  return URL.createObjectURL(new Blob([wavBuf],{type:'audio/wav'}));
+}
+
+// 全のりもの音を事前生成
+const vehicleSounds = {};
+cars.forEach(c => { vehicleSounds[c.type] = makeVehicleSound(c.type); });
+
+function playVehicleSound(type) {
+  if (vehicleSounds[type]) {
+    const a = new Audio(vehicleSounds[type]);
+    a.volume = 0.6;
+    a.play().catch(() => {});
+  }
+}
 
 function toggleBgm() {
   bgmOn = !bgmOn;

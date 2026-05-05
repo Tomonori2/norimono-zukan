@@ -263,6 +263,64 @@ body {
   transition: transform 0.12s;
 }
 .splash-zukan-btn:active { transform: scale(0.96); }
+
+/* --- カテゴリフィルター --- */
+.cat-filter { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+.cat-btn {
+  padding: 6px 14px; border: 2px solid #FFB347; border-radius: 99px;
+  background: #fff; color: #CC5500; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.cat-btn.active { background: linear-gradient(90deg,#FF6B6B,#FFD93D); color: #fff; border-color: transparent; box-shadow: 0 2px 8px rgba(255,107,107,0.3); }
+.cat-btn:active { transform: scale(0.95); }
+
+/* --- ずかん一覧グリッド --- */
+.zukan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 0; }
+.zukan-grid-item {
+  display: flex; flex-direction: column; align-items: center;
+  background: #fff; border-radius: 14px; padding: 10px 4px;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.zukan-grid-item:active { transform: scale(0.94); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.zukan-grid-item .g-emoji { font-size: 28px; }
+.zukan-grid-item .g-jp { font-size: 11px; font-weight: 700; color: #333; margin-top: 4px; text-align: center; line-height: 1.3; }
+.zukan-list-btn {
+  width: 100%; padding: 10px; border: none; border-radius: 14px;
+  background: linear-gradient(90deg, #a29bfe, #fd79a8);
+  color: #fff; font-size: 14px; font-weight: 900; cursor: pointer;
+  margin-bottom: 10px; box-shadow: 0 2px 8px rgba(162,155,254,0.3);
+  transition: transform 0.12s;
+}
+.zukan-list-btn:active { transform: scale(0.97); }
+
+/* --- ハイスコア --- */
+.highscore-bar {
+  text-align: center; padding: 6px 0; margin-bottom: 6px;
+  font-size: 13px; color: #888; font-weight: 700;
+}
+.highscore-bar span { color: #FF9F43; font-size: 15px; font-weight: 900; }
+.splash-highscore {
+  font-size: 13px; color: #FF9F43; font-weight: 700; margin-bottom: 8px;
+}
+
+/* --- スワイプインジケーター --- */
+.swipe-hint { font-size: 11px; color: #bbb; text-align: center; margin-top: 6px; letter-spacing: 1px; }
+
+/* --- ずかん一覧オーバーレイ --- */
+#zukanListView {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(255,245,224,0.97); overflow-y: auto; padding: 16px;
+}
+.zukan-list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.zukan-list-title { font-size: 18px; font-weight: 900; color: #FF6B6B; }
+.zukan-list-close {
+  border: none; background: #FFE0E0; color: #FF6B6B; border-radius: 99px;
+  padding: 6px 16px; font-size: 14px; font-weight: 900; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -273,6 +331,7 @@ body {
     <div class="splash-title">はたらくのりもの</div>
     <div class="splash-sub">✨ Working Vehicles Quiz ✨</div>
     <div class="splash-count">のりもの <span id="splashCount">18</span> しゅるい！</div>
+    <div class="splash-highscore" id="splashHighscore"></div>
     <div class="splash-cars" id="splashCars"></div>
     <button class="splash-start-btn" onclick="startQuiz()">🎯 クイズで あそぶ</button><br><br>
     <button class="splash-zukan-btn" onclick="startZukan()">📖 ずかんを みる</button>
@@ -313,64 +372,89 @@ body {
       <div class="result-big" id="rScore"></div>
       <div class="res-jp" id="rMsgJp"></div>
       <div class="res-en" id="rMsgEn"></div>
+      <div class="highscore-bar" id="highscoreBar"></div>
       <button class="retry-btn" onclick="restart()">🔄 もういちど あそぶ</button>
     </div>
   </div>
   <div id="zukan" style="display:none;">
+    <button class="zukan-list-btn" onclick="openZukanList()">📋 いちらんを みる</button>
+    <div class="cat-filter" id="zukanCatFilter">
+      <button class="cat-btn active" onclick="setCat('すべて',this)">すべて</button>
+      <button class="cat-btn" onclick="setCat('くるま',this)">🚗 くるま</button>
+      <button class="cat-btn" onclick="setCat('でんしゃ',this)">🚃 でんしゃ</button>
+      <button class="cat-btn" onclick="setCat('ふね',this)">🚢 ふね</button>
+      <button class="cat-btn" onclick="setCat('そら',this)">✈️ そら</button>
+    </div>
     <div class="car-box" id="zukanBox">
       <div id="zukanDisplay"></div>
       <div class="zukan-emoji" id="zukanEmoji"></div>
       <div class="zukan-name-jp" id="zukanNameJp"></div>
       <div class="zukan-name-en" id="zukanNameEn"></div>
       <div class="zukan-fact" id="zukanFact"></div>
-      <button class="speak-btn" onclick="playVehicleSound(cars[zukanIdx].type)">🔊 おとを きく</button>
-      <button class="speak-btn" onclick="sayJp(cars[zukanIdx].fact)" style="margin-top:6px">📖 せつめいを きく</button>
+      <button class="speak-btn" onclick="playCurrentZukanSound()">🔊 おとを きく</button>
+      <button class="speak-btn" onclick="sayCurrentZukanFact()" style="margin-top:6px">📖 せつめいを きく</button>
     </div>
     <div class="zukan-nav">
       <button class="zukan-nav-btn" onclick="zukanPrev()">◀ まえ</button>
       <span class="zukan-counter" id="zukanCounter">1 / 12</span>
       <button class="zukan-nav-btn" onclick="zukanNext()">つぎ ▶</button>
     </div>
+    <div class="swipe-hint">◀ スワイプ ▶</div>
   </div>
   </div>
 </div>
+<!-- ずかん一覧オーバーレイ -->
+<div id="zukanListView">
+  <div class="zukan-list-header">
+    <div class="zukan-list-title">📖 のりもの いちらん</div>
+    <button class="zukan-list-close" onclick="closeZukanList()">✕ とじる</button>
+  </div>
+  <div class="cat-filter" id="listCatFilter">
+    <button class="cat-btn active" onclick="setListCat('すべて',this)">すべて</button>
+    <button class="cat-btn" onclick="setListCat('くるま',this)">🚗 くるま</button>
+    <button class="cat-btn" onclick="setListCat('でんしゃ',this)">🚃 でんしゃ</button>
+    <button class="cat-btn" onclick="setListCat('ふね',this)">🚢 ふね</button>
+    <button class="cat-btn" onclick="setListCat('そら',this)">✈️ そら</button>
+  </div>
+  <div class="zukan-grid" id="zukanGrid"></div>
+</div>
 <script>
 const cars = [
-  { jp: "しょうぼうしゃ", en: "Fire Truck", readJp: "しょうぼうしゃ！かじを けすよ！", readEn: "Fire truck!", type: "fire",
+  { jp: "しょうぼうしゃ", en: "Fire Truck", readJp: "しょうぼうしゃ！かじを けすよ！", readEn: "Fire truck!", type: "fire", category: "くるま",
     fact: "しょうぼうしゃは おおきな ポンプで みずを だすよ。はしごしゃは ビルの うえまで とどくんだ！", emoji: "🚒" },
-  { jp: "きゅうきゅうしゃ", en: "Ambulance", readJp: "きゅうきゅうしゃ！びょうきのひとを はこぶよ！", readEn: "Ambulance!", type: "ambulance",
+  { jp: "きゅうきゅうしゃ", en: "Ambulance", readJp: "きゅうきゅうしゃ！びょうきのひとを はこぶよ！", readEn: "Ambulance!", type: "ambulance", category: "くるま",
     fact: "きゅうきゅうしゃは サイレンを ならして はしるよ。なかには ベッドや くすりが あるんだ！", emoji: "🚑" },
-  { jp: "パトカー", en: "Police Car", readJp: "パトカー！まちを まもるよ！", readEn: "Police car!", type: "police",
+  { jp: "パトカー", en: "Police Car", readJp: "パトカー！まちを まもるよ！", readEn: "Police car!", type: "police", category: "くるま",
     fact: "パトカーは しろと くろの もようだよ。あかと あおの ライトが くるくる まわるんだ！", emoji: "🚓" },
-  { jp: "ごみしゅうしゅうしゃ", en: "Garbage Truck", readJp: "ごみしゅうしゅうしゃ！ごみを あつめるよ！", readEn: "Garbage truck!", type: "garbage",
+  { jp: "ごみしゅうしゅうしゃ", en: "Garbage Truck", readJp: "ごみしゅうしゅうしゃ！ごみを あつめるよ！", readEn: "Garbage truck!", type: "garbage", category: "くるま",
     fact: "ごみしゅうしゅうしゃは まいにち まちを まわって ごみを あつめるよ。うしろから ごみを いれるんだ！", emoji: "🗑️" },
-  { jp: "ダンプカー", en: "Dump Truck", readJp: "ダンプカー！つちや いしを はこぶよ！", readEn: "Dump truck!", type: "dump",
+  { jp: "ダンプカー", en: "Dump Truck", readJp: "ダンプカー！つちや いしを はこぶよ！", readEn: "Dump truck!", type: "dump", category: "くるま",
     fact: "ダンプカーは にだいが うしろに かたむいて つちを おろすよ。こうじげんばで だいかつやく！", emoji: "🚛" },
-  { jp: "バス", en: "Bus", readJp: "バス！おきゃくさんを はこぶよ！", readEn: "Bus!", type: "bus",
+  { jp: "バス", en: "Bus", readJp: "バス！おきゃくさんを はこぶよ！", readEn: "Bus!", type: "bus", category: "くるま",
     fact: "バスは たくさんの ひとを いちどに はこべるよ。まちの なかを はしる ろせんバスや とおくに いく こうそくバスが あるよ！", emoji: "🚌" },
-  { jp: "クレーン車", en: "Crane Truck", readJp: "クレーンしゃ！おもいものを もちあげるよ！", readEn: "Crane truck!", type: "crane",
+  { jp: "クレーン車", en: "Crane Truck", readJp: "クレーンしゃ！おもいものを もちあげるよ！", readEn: "Crane truck!", type: "crane", category: "くるま",
     fact: "クレーンしゃは ながい うでで おもい ものを もちあげるよ。ビルを つくる ときに つかうんだ！", emoji: "🏗️" },
-  { jp: "タンクローリー", en: "Tanker Truck", readJp: "タンクローリー！あぶらを はこぶよ！", readEn: "Tanker truck!", type: "tanker",
+  { jp: "タンクローリー", en: "Tanker Truck", readJp: "タンクローリー！あぶらを はこぶよ！", readEn: "Tanker truck!", type: "tanker", category: "くるま",
     fact: "タンクローリーは まるい タンクに ガソリンや ぎゅうにゅうを いれて はこぶよ。きけんぶつの マークが ついてるんだ！", emoji: "⛽" },
-  { jp: "でんしゃ", en: "Train", readJp: "でんしゃ！みんなを はこぶよ！", readEn: "Train!", type: "train",
+  { jp: "でんしゃ", en: "Train", readJp: "でんしゃ！みんなを はこぶよ！", readEn: "Train!", type: "train", category: "でんしゃ",
     fact: "でんしゃは レールの うえを はしるよ。しんかんせんは じそく 300キロも でるんだ！", emoji: "🚃" },
-  { jp: "ふね", en: "Ship", readJp: "ふね！うみを わたるよ！", readEn: "Ship!", type: "ship",
+  { jp: "ふね", en: "Ship", readJp: "ふね！うみを わたるよ！", readEn: "Ship!", type: "ship", category: "ふね",
     fact: "ふねは うみや かわを わたるよ。おおきな ふねは くるまや コンテナも はこべるんだ！", emoji: "🚢" },
-  { jp: "ひこうき", en: "Airplane", readJp: "ひこうき！そらを とぶよ！", readEn: "Airplane!", type: "airplane",
+  { jp: "ひこうき", en: "Airplane", readJp: "ひこうき！そらを とぶよ！", readEn: "Airplane!", type: "airplane", category: "そら",
     fact: "ひこうきは そらの うえを とぶよ。おおきな ひこうきは 500にん いじょう のれるんだ！", emoji: "✈️" },
-  { jp: "ショベルカー", en: "Excavator", readJp: "ショベルカー！つちを ほるよ！", readEn: "Excavator!", type: "excavator",
+  { jp: "ショベルカー", en: "Excavator", readJp: "ショベルカー！つちを ほるよ！", readEn: "Excavator!", type: "excavator", category: "くるま",
     fact: "ショベルカーは おおきな アームで つちを ほるよ。キャタピラで でこぼこの みちも はしれるんだ！", emoji: "🔧" },
-  { jp: "パネルトラック", en: "Panel Truck", readJp: "パネルトラック！にもつを はこぶよ！", readEn: "Panel truck!", type: "panel",
+  { jp: "パネルトラック", en: "Panel Truck", readJp: "パネルトラック！にもつを はこぶよ！", readEn: "Panel truck!", type: "panel", category: "くるま",
     fact: "パネルトラックは はこがたの にだいで にもつを はこぶよ。たくはいびんや ひっこしで だいかつやく！", emoji: "📦" },
-  { jp: "トラクター", en: "Tractor", readJp: "トラクター！はたけを たがやすよ！", readEn: "Tractor!", type: "tractor",
+  { jp: "トラクター", en: "Tractor", readJp: "トラクター！はたけを たがやすよ！", readEn: "Tractor!", type: "tractor", category: "くるま",
     fact: "トラクターは おおきな タイヤで はたけを たがやすよ。おこめや やさいを つくるのに ひつようなんだ！", emoji: "🚜" },
-  { jp: "バイク", en: "Motorcycle", readJp: "バイク！かぜを きって はしるよ！", readEn: "Motorcycle!", type: "motorcycle",
+  { jp: "バイク", en: "Motorcycle", readJp: "バイク！かぜを きって はしるよ！", readEn: "Motorcycle!", type: "motorcycle", category: "くるま",
     fact: "バイクは 2つの タイヤで はしるよ。おまわりさんが のる しろバイは とっても はやいんだ！", emoji: "🏍️" },
-  { jp: "ロケット", en: "Rocket", readJp: "ロケット！うちゅうに とぶよ！", readEn: "Rocket!", type: "rocket",
+  { jp: "ロケット", en: "Rocket", readJp: "ロケット！うちゅうに とぶよ！", readEn: "Rocket!", type: "rocket", category: "そら",
     fact: "ロケットは ものすごい スピードで うちゅうに とびだすよ。にほんの H3ロケットは すごいんだ！", emoji: "🚀" },
-  { jp: "ヨット", en: "Sailboat", readJp: "ヨット！かぜで すすむよ！", readEn: "Sailboat!", type: "sailboat",
+  { jp: "ヨット", en: "Sailboat", readJp: "ヨット！かぜで すすむよ！", readEn: "Sailboat!", type: "sailboat", category: "ふね",
     fact: "ヨットは かぜの ちからで うみを すすむよ。おおきな ほを はって かぜを うけるんだ！", emoji: "⛵" },
-  { jp: "しんかんせん", en: "Bullet Train", readJp: "しんかんせん！いちばん はやい でんしゃだよ！", readEn: "Bullet train!", type: "shinkansen",
+  { jp: "しんかんせん", en: "Bullet Train", readJp: "しんかんせん！いちばん はやい でんしゃだよ！", readEn: "Bullet train!", type: "shinkansen", category: "でんしゃ",
     fact: "しんかんせんは じそく 300キロも でるよ。とうきょうから おおさかまで 2じかんはんで いけるんだ！", emoji: "🚄" }
 ];
 
@@ -1396,6 +1480,8 @@ function showResult() {
   const mi=s===t?3:s>=t*0.75?2:s>=t*0.5?1:0;
   const starMap=["⭐","⭐⭐","⭐⭐⭐","🌟🌟🌟"];
   document.getElementById("rStars").textContent = starMap[mi];
+  updateBestScore(s, t);
+  showHighscore();
   document.getElementById("rMsgJp").textContent=msgs[mi][0];
   document.getElementById("rMsgEn").textContent=msgs[mi][1];
   if (mi >= 2) setTimeout(launchConfetti, 300);
@@ -1410,8 +1496,24 @@ document.getElementById("total").textContent = cars.length;
 
 // --- のりもの図鑑 ---
 let zukanIdx = 0;
+let currentCat = 'すべて';
+function getFilteredCars() {
+  if (currentCat === 'すべて') return cars.map((_,i) => i);
+  return cars.map((c,i) => c.category === currentCat ? i : -1).filter(i => i >= 0);
+}
+function setCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('#zukanCatFilter .cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  zukanIdx = 0;
+  showZukan();
+}
 function showZukan() {
-  const car = cars[zukanIdx];
+  const filtered = getFilteredCars();
+  if (filtered.length === 0) return;
+  if (zukanIdx >= filtered.length) zukanIdx = 0;
+  const carRealIdx = filtered[zukanIdx];
+  const car = cars[carRealIdx];
   const display = document.getElementById("zukanDisplay");
   if (photoMap[car.type]) {
     const p = photoMap[car.type];
@@ -1426,13 +1528,13 @@ function showZukan() {
   document.getElementById("zukanNameJp").textContent = car.jp;
   document.getElementById("zukanNameEn").textContent = car.en;
   document.getElementById("zukanFact").textContent = car.fact;
-  document.getElementById("zukanCounter").textContent = (zukanIdx + 1) + " / " + cars.length;
+  document.getElementById("zukanCounter").textContent = (zukanIdx + 1) + " / " + filtered.length;
   const box = document.getElementById("zukanBox");
   box.style.animation = 'none'; box.offsetHeight;
   box.style.animation = 'slideIn 0.4s cubic-bezier(.4,1.6,.6,1)';
 }
-function zukanNext() { zukanIdx = (zukanIdx + 1) % cars.length; showZukan(); }
-function zukanPrev() { zukanIdx = (zukanIdx - 1 + cars.length) % cars.length; showZukan(); }
+function zukanNext() { const n = getFilteredCars().length; zukanIdx = (zukanIdx + 1) % n; showZukan(); }
+function zukanPrev() { const n = getFilteredCars().length; zukanIdx = (zukanIdx - 1 + n) % n; showZukan(); }
 
 function switchMode(mode) {
   document.getElementById('modeQuiz').classList.toggle('active', mode === 'quiz');
@@ -1443,13 +1545,14 @@ function switchMode(mode) {
   document.getElementById('scoreBar').style.display = mode === 'quiz' ? 'flex' : 'none';
   document.getElementById('progressFill').parentElement.parentElement.style.display = mode === 'quiz' ? 'block' : 'none';
   if (mode === 'quiz') { restart(); }
-  if (mode === 'zukan') { zukanIdx = 0; showZukan(); }
+  if (mode === 'zukan') { zukanIdx = 0; currentCat = 'すべて'; document.querySelectorAll('#zukanCatFilter .cat-btn').forEach((b,i) => b.classList.toggle('active', i===0)); showZukan(); }
 }
 
 // --- スタート画面 ---
 function initSplash() {
   document.getElementById('splashCount').textContent = cars.length;
   const container = document.getElementById('splashCars');
+  initSplashHighscore();
   container.innerHTML = cars.map((c, i) =>
     `<div class="splash-car-icon" style="animation-delay:${i * 0.05}s">${c.emoji}</div>`
   ).join('');
@@ -1475,6 +1578,88 @@ function showSplash() {
   initSplash();
 }
 initSplash();
+
+// --- スワイプジェスチャー ---
+(function(){
+  let tx = 0;
+  const zukanEl = document.getElementById('zukan');
+  zukanEl.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+  zukanEl.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 40) dx < 0 ? zukanNext() : zukanPrev();
+  }, {passive:true});
+})();
+
+// --- ハイスコア (localStorage) ---
+function getBestScore() {
+  return parseInt(localStorage.getItem('norimono_best') || '0');
+}
+function updateBestScore(score, total) {
+  const prev = getBestScore();
+  if (score > prev) localStorage.setItem('norimono_best', score);
+  return Math.max(score, prev);
+}
+function showHighscore() {
+  const best = getBestScore();
+  const bar = document.getElementById('highscoreBar');
+  if (bar) bar.innerHTML = best > 0 ? `🏆 ベストスコア: <span>${best} / ${cars.length}</span>` : '';
+}
+function initSplashHighscore() {
+  const best = getBestScore();
+  const el = document.getElementById('splashHighscore');
+  if (el) el.textContent = best > 0 ? `🏆 さいこうきろく: ${best} / ${cars.length}` : '';
+}
+
+// --- ずかん一覧 ---
+let listCat = 'すべて';
+function setListCat(cat, btn) {
+  listCat = cat;
+  document.querySelectorAll('#listCatFilter .cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderZukanGrid();
+}
+function renderZukanGrid() {
+  const grid = document.getElementById('zukanGrid');
+  const filtered = listCat === 'すべて' ? cars : cars.filter(c => c.category === listCat);
+  grid.innerHTML = filtered.map((c, i) => {
+    const realIdx = cars.indexOf(c);
+    return `<div class="zukan-grid-item" onclick="openZukanAt(${realIdx})">
+      <div class="g-emoji">${c.emoji}</div>
+      <div class="g-jp">${c.jp}</div>
+    </div>`;
+  }).join('');
+}
+function openZukanList() {
+  listCat = 'すべて';
+  document.querySelectorAll('#listCatFilter .cat-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  renderZukanGrid();
+  document.getElementById('zukanListView').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+function closeZukanList() {
+  document.getElementById('zukanListView').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function openZukanAt(realIdx) {
+  closeZukanList();
+  // Find position in filtered cars
+  currentCat = 'すべて';
+  document.querySelectorAll('#zukanCatFilter .cat-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  zukanIdx = realIdx;
+  showZukan();
+}
+
+// --- ずかん音声ヘルパー ---
+function playCurrentZukanSound() {
+  const filtered = getFilteredCars();
+  const car = cars[filtered[zukanIdx]];
+  playVehicleSound(car.type);
+}
+function sayCurrentZukanFact() {
+  const filtered = getFilteredCars();
+  const car = cars[filtered[zukanIdx]];
+  sayJp(car.fact);
+}
 </script>
 <script>
 if ('serviceWorker' in navigator) {

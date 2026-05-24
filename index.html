@@ -1479,8 +1479,8 @@ function initSpeech() {
   function findJaVoice() {
     const voices = speechSynthesis.getVoices();
     const jaVoices = voices.filter(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
-    // 男性っぽい名前を優先（Otoya, Kyoko以外, Hattori など）
-    const maleVoice = jaVoices.find(v => /otoya|hattori|male|man/i.test(v.name));
+    // 男性声を名前で探す（Ichiro, Otoya, Hattori など）
+    const maleVoice = jaVoices.find(v => /ichiro|otoya|hattori|male|man|kenji|hiroshi/i.test(v.name));
     jaVoice = maleVoice || jaVoices[0] || null;
     if (voices.length > 0) speechReady = true;
   }

@@ -307,6 +307,20 @@ body {
 /* 先生バブルで代替するため旧テキストを非表示 */
 .q-jp, .q-en { display: none; }
 
+/* --- ヒントボタン --- */
+.hint-btn {
+  width: 100%; padding: 14px; margin-bottom: 10px;
+  border: none; border-radius: 20px;
+  background: linear-gradient(90deg, #fffbe6, #fff3b0);
+  border-bottom: 4px solid #FFD93D;
+  color: #CC8800; font-size: 17px; font-weight: 900;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 3px 12px rgba(255,210,0,0.2);
+  transition: transform 0.12s;
+}
+.hint-btn:active { transform: scale(0.97); }
+.hint-btn:disabled { opacity: 0.4; cursor: default; }
+
 /* --- スワイプインジケーター --- */
 .swipe-hint { font-size: 11px; color: #bbb; text-align: center; margin-top: 6px; letter-spacing: 1px; }
 
@@ -452,6 +466,7 @@ body {
       <button class="speak-btn" onclick="replayTeacher()">🔊 もういちど きく</button>
     </div>
     <div class="choices" id="choices"></div>
+    <button class="hint-btn" id="hintBtn" onclick="askHint()">💡 ヒントをおしえて！</button>
     <div class="feedback" id="feedback"></div>
     <button class="next-btn" id="nextBtn" onclick="nextQ()">つぎへ ▶</button>
   </div>
@@ -574,6 +589,20 @@ function setTeacherThinking() {
 
 const KOSAKA_CHAR = `あなたは「高坂先生」です。優しくて頼りになる男の先生で、2〜4歳の子供が大好きです。
 話し方：ゆっくり・はっきり・明るく・自然な日本語。ひらがな中心で短く。`;
+
+async function askHint() {
+  const btn = document.getElementById('hintBtn');
+  btn.disabled = true;
+  btn.textContent = '💭 かんがえているよ…';
+  const car = cars[order[idx]];
+  const p = `${KOSAKA_CHAR}
+子どもが「${car.jp}」のクイズでヒントを求めています。正解の名前は言わずに、見た目や色・はたらきのヒントだけ教えてください。
+条件:30字以内・絵文字1つ・ひらがな中心。例:「あかくて おおきい くるまだよ！🚒」`;
+  const hint = (await geminiAsk(p)) || `${car.emoji} よーく みてみよう！なにか わかるかな？`;
+  showTeacher(hint);
+  btn.textContent = '💡 もう いちど ヒント！';
+  btn.disabled = false;
+}
 
 async function geminiQuestion(car) {
   const p = `${KOSAKA_CHAR}
@@ -1621,6 +1650,8 @@ async function showQ() {
   document.getElementById("choices").innerHTML=choices.map(c=>`<button class="choice-btn" data-jp="${c.jp}" onclick="answer('${c.jp}','${car.jp}',this)"><span class="c-jp">${c.jp}</span><span class="c-en">${c.en}</span></button>`).join("");
   document.getElementById("feedback").innerHTML="";
   document.getElementById("nextBtn").style.display="none";
+  const hintBtn = document.getElementById("hintBtn");
+  hintBtn.style.display="block"; hintBtn.disabled=false; hintBtn.textContent="💡 ヒントをおしえて！";
   document.getElementById("qnum").textContent=idx+1;
   updateProgress();
   animateCarBox();
@@ -1631,6 +1662,7 @@ async function showQ() {
 }
 async function answer(chosen,correct,btn) {
   if(answered) return; answered=true;
+  document.getElementById("hintBtn").style.display="none";
   const car=cars[order[idx]];
   document.querySelectorAll(".choice-btn").forEach(b=>{b.style.pointerEvents="none"; if(b.dataset.jp===correct) b.classList.add("correct");});
   setTeacherThinking();

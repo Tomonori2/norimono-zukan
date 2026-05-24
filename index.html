@@ -573,28 +573,27 @@ function setTeacherThinking() {
 }
 
 const KOSAKA_CHAR = `あなたは「高坂先生」です。優しくて頼りになる男の先生で、2〜4歳の子供が大好きです。
-口癖：「ピポパポ！」「けいさんかんりょう！」「せんせい的に いうと…」をときどき使う。
-話し方：ゆっくり・はっきり・明るく。ひらがな中心で短く。`;
+話し方：ゆっくり・はっきり・明るく・自然な日本語。ひらがな中心で短く。`;
 
 async function geminiQuestion(car) {
   const p = `${KOSAKA_CHAR}
 乗り物「${car.jp}」(英語:${car.en})のクイズを出します。元気よく短い質問を言ってください。
-条件:30字以内・絵文字1つ・ひらがな中心。例:「ピポパポ！これは なにかな〜？🤔」`;
-  return (await geminiAsk(p)) || `ピポパポ！これは なにかな〜？🤔`;
+条件:30字以内・絵文字1つ・ひらがな中心。例:「これは なにかな？🤔」`;
+  return (await geminiAsk(p)) || `これは なにかな？🤔`;
 }
 
 async function geminiCorrect(car) {
   const p = `${KOSAKA_CHAR}
 子どもが「${car.jp}」に正解しました！元気よく褒めて、乗り物名を日本語と英語で教えてください。
-条件:40字以内・絵文字1〜2個・ひらがな中心。例:「けいさんかんりょう！🎉 これは しょうぼうしゃ！Fire Truck！すごいぞ！」`;
-  return (await geminiAsk(p)) || `けいさんかんりょう！🎉 これは ${car.jp}！${car.en}！すごいぞ！`;
+条件:40字以内・絵文字1〜2個・ひらがな中心。例:「やったね！🎉 これは しょうぼうしゃ！Fire Truck！よく できたね！」`;
+  return (await geminiAsk(p)) || `やったね！🎉 これは ${car.jp}！${car.en}！よく できたね！`;
 }
 
 async function geminiHint(car) {
   const p = `${KOSAKA_CHAR}
 子どもが「${car.jp}」を間違えました。優しくヒントを出して正解を教えてください。
-条件:30字以内・絵文字1個・ひらがな中心。例:「せんせい的に いうと… ${car.emoji} あかい くるまだよ！もう いちど！」`;
-  return (await geminiAsk(p)) || `せんせい的に いうと… ${car.emoji} こたえは ${car.jp}！いっしょに おぼえよう！`;
+条件:30字以内・絵文字1個・ひらがな中心。例:「${car.emoji} もう いちど よく みてみよう！」`;
+  return (await geminiAsk(p)) || `${car.emoji} こたえは ${car.jp}！いっしょに おぼえよう！`;
 }
 // ===== Gemini先生 ここまで =====
 

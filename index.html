@@ -524,7 +524,7 @@ function saveApiKey() {
   geminiKey = val;
   localStorage.setItem('geminiApiKey', val);
   document.getElementById('apiKeyModal').classList.remove('show');
-  showTeacher('こんにちは！いっしょに のりものを おぼえようね！🦉✨');
+  showTeacher('こんにちは！いっしょに のりものを おぼえようね！✨');
 }
 function skipApiKey() {
   document.getElementById('apiKeyModal').classList.remove('show');
@@ -1753,7 +1753,7 @@ function startQuiz() {
   if (!geminiKey) {
     setTimeout(showApiKeyModal, 600);
   } else {
-    setTimeout(() => showTeacher('クイズを はじめるよ！がんばってね！🦉'), 400);
+    setTimeout(() => showTeacher('クイズを はじめるよ！がんばってね！🚒'), 400);
   }
 }
 function startZukan() {
@@ -1857,7 +1857,7 @@ function sayCurrentZukanFact() {
 <!-- APIキー設定モーダル -->
 <div id="apiKeyModal">
   <div class="api-modal-box">
-    <div style="font-size:56px; margin-bottom:10px;">🦉✨</div>
+    <div style="font-size:56px; margin-bottom:10px;">🔑✨</div>
     <div style="font-size:22px; font-weight:900; color:#FF6B6B; margin-bottom:8px;">Gemini先生の<br>APIキーを入れてね！</div>
     <div style="font-size:13px; color:#888; margin-bottom:18px; line-height:1.7;">
       Google AI Studio で<br>「Gemini API キー」を取得して<br>下に貼り付けてください 🔑

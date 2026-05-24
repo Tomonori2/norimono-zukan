@@ -1579,7 +1579,7 @@ function sayEn(text) {
 function speakQ() { sayJp("この のりものは なに？", () => sayEn("What is this vehicle?")); }
 let order=[], idx=0, correctCount=0, answered=false;
 function shuffle(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
-const photoMap = { fire: 'fire.png', bus: 'bus.jpg', airplane: 'airplane.png', excavator: 'excavator.jpg', train: 'train.jpg', garbage: { src: 'garbage.jpg', position: 'top' } };
+const photoMap = { fire: 'fire.png', bus: 'bus.jpg', airplane: 'airplane.png', excavator: 'excavator.jpg', train: 'train.png', garbage: { src: 'garbage.jpg', position: 'top' } };
 
 // --- Confetti ---
 const confCanvas = document.getElementById('confettiCanvas');

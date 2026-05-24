@@ -304,8 +304,80 @@ body {
   font-size: 13px; color: #FF9F43; font-weight: 700; margin-bottom: 8px;
 }
 
+/* 先生バブルで代替するため旧テキストを非表示 */
+.q-jp, .q-en { display: none; }
+
 /* --- スワイプインジケーター --- */
 .swipe-hint { font-size: 11px; color: #bbb; text-align: center; margin-top: 6px; letter-spacing: 1px; }
+
+/* --- Gemini先生キャラクター --- */
+@keyframes teacherBob {
+  0%,100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+@keyframes bubbleIn {
+  from { opacity:0; transform:scale(0.8) translateX(-8px); }
+  to   { opacity:1; transform:scale(1) translateX(0); }
+}
+@keyframes teacherThink {
+  0%,100% { opacity:1; } 50% { opacity:0.4; }
+}
+.teacher-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 14px; padding: 0 2px;
+}
+.teacher-char {
+  font-size: 60px; flex-shrink: 0; line-height: 1;
+  animation: teacherBob 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(255,107,107,0.25));
+}
+.teacher-bubble {
+  background: linear-gradient(135deg, #fffdf5, #fff8ec);
+  border: 2.5px solid #FFD093;
+  border-radius: 20px 20px 20px 6px;
+  padding: 14px 18px; flex: 1;
+  font-size: 17px; font-weight: 900; color: #333; line-height: 1.65;
+  box-shadow: 0 5px 18px rgba(255,160,50,0.18);
+  position: relative; min-height: 62px;
+  display: flex; align-items: center;
+}
+.teacher-bubble::before {
+  content: ''; position: absolute;
+  left: -13px; top: 20px; width: 0; height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 13px solid #FFD093;
+}
+.teacher-bubble::after {
+  content: ''; position: absolute;
+  left: -9px; top: 22px; width: 0; height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 10px solid #fffdf5;
+}
+.teacher-bubble.animate { animation: bubbleIn 0.38s cubic-bezier(.4,1.4,.6,1); }
+.teacher-thinking { animation: teacherThink 0.9s ease-in-out infinite; color:#bbb; }
+
+/* --- APIキー設定モーダル --- */
+#apiKeyModal {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.65);
+  align-items: center; justify-content: center;
+}
+#apiKeyModal.show { display: flex; }
+.api-modal-box {
+  background: #fff; border-radius: 28px; padding: 2rem 1.5rem;
+  max-width: 360px; width: 90%; text-align: center;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+  animation: slideIn 0.45s cubic-bezier(.4,1.4,.6,1);
+}
+.api-key-input {
+  width: 100%; padding: 12px 16px; border-radius: 14px;
+  border: 2.5px solid #FFD93D; font-size: 13px; font-family: monospace;
+  outline: none; margin-bottom: 14px; box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.api-key-input:focus { border-color: #FF9F43; }
 
 /* --- ずかん一覧オーバーレイ --- */
 #zukanListView {
@@ -339,7 +411,10 @@ body {
   <div id="gameArea" style="display:none;">
     <div class="title">🚒 はたらくのりもの クイズ 🚌</div>
     <div class="title-en">✨ Working Vehicles Quiz ✨</div>
-    <button class="bgm-btn" id="bgmBtn" onclick="toggleBgm()">🎵 BGM オン</button>
+    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:0.5rem;">
+      <button class="bgm-btn" id="bgmBtn" onclick="toggleBgm()" style="margin:0;">🎵 BGM オン</button>
+      <button class="bgm-btn" onclick="showApiKeyModal()" style="margin:0; background:linear-gradient(90deg,#e0f0ff,#d0e8ff); color:#3366AA;">🔑 先生キー</button>
+    </div>
     <div class="mode-bar">
       <button class="mode-btn active" id="modeQuiz" onclick="switchMode('quiz')">🎯 クイズ</button>
       <button class="mode-btn" id="modeZukan" onclick="switchMode('zukan')">📖 ずかん</button>
@@ -354,13 +429,20 @@ body {
     <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
   </div>
   <div id="quiz">
+    <!-- Gemini先生キャラクター -->
+    <div class="teacher-row" id="teacherRow">
+      <div class="teacher-char">🦉</div>
+      <div class="teacher-bubble animate" id="teacherBubble">
+        <span id="teacherText">よんでいるよ〜 🎵</span>
+      </div>
+    </div>
     <div class="car-box" id="carBox">
       <div id="carDisplay">
         <div class="car-svg-wrap"><svg id="carSvg" viewBox="0 0 280 160" width="100%" height="auto"></svg></div>
       </div>
       <div class="q-jp">この のりものは なに？</div>
       <div class="q-en">What is this vehicle?</div>
-      <button class="speak-btn" onclick="speakQ()">🔊 もういちど きく</button>
+      <button class="speak-btn" onclick="replayTeacher()">🔊 もういちど きく</button>
     </div>
     <div class="choices" id="choices"></div>
     <div class="feedback" id="feedback"></div>
@@ -419,6 +501,92 @@ body {
   <div class="zukan-grid" id="zukanGrid"></div>
 </div>
 <script>
+// ===== Gemini先生 =====
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent';
+let geminiKey = localStorage.getItem('geminiApiKey') || '';
+
+function showApiKeyModal() {
+  const modal = document.getElementById('apiKeyModal');
+  modal.classList.add('show');
+  const input = document.getElementById('apiKeyInput');
+  if (geminiKey) input.value = geminiKey;
+}
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { alert('APIキーを入力してください'); return; }
+  geminiKey = val;
+  localStorage.setItem('geminiApiKey', val);
+  document.getElementById('apiKeyModal').classList.remove('show');
+  showTeacher('こんにちは！いっしょに のりものを おぼえようね！🦉✨');
+}
+function skipApiKey() {
+  document.getElementById('apiKeyModal').classList.remove('show');
+  showTeacher('クイズを はじめるよ〜！がんばってね！🚒');
+}
+
+async function geminiAsk(prompt) {
+  if (!geminiKey) return null;
+  try {
+    const res = await fetch(GEMINI_URL + '?key=' + geminiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 60, temperature: 1.1 }
+      })
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  } catch { return null; }
+}
+
+let lastTeacherText = '';
+function showTeacher(text) {
+  const el = document.getElementById('teacherText');
+  const bubble = document.getElementById('teacherBubble');
+  el.classList.remove('teacher-thinking');
+  el.textContent = text;
+  lastTeacherText = text;
+  bubble.classList.remove('animate');
+  bubble.offsetHeight;
+  bubble.classList.add('animate');
+  if (text && text !== '…') sayJp(text);
+}
+function replayTeacher() { if (lastTeacherText) sayJp(lastTeacherText); }
+
+function setTeacherThinking() {
+  const el = document.getElementById('teacherText');
+  const bubble = document.getElementById('teacherBubble');
+  el.textContent = 'かんがえているよ… 💭';
+  el.classList.add('teacher-thinking');
+  bubble.classList.remove('animate');
+  bubble.offsetHeight;
+  bubble.classList.add('animate');
+}
+
+async function geminiQuestion(car) {
+  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子に乗り物クイズを出しています。
+乗り物「${car.jp}」(英語:${car.en})の問題を出すとき、元気よく短い質問を言ってください。
+条件:ひらがな中心・30字以内・絵文字1つ・日本語のみ。例:「これは なにかな〜？🤔」`;
+  return (await geminiAsk(p)) || `これは なにかな〜？🤔`;
+}
+
+async function geminiCorrect(car) {
+  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子が「${car.jp}」に正解しました！
+元気よく褒めて、乗り物名を日本語と英語で教えてください。
+条件:ひらがな中心・40字以内・絵文字1〜2個。例:「やったね！🎉 これは きゅうきゅうしゃ！Ambulance！すごい！」`;
+  return (await geminiAsk(p)) || `やったね！🎉 これは ${car.jp}！${car.en}！すごいね！`;
+}
+
+async function geminiHint(car) {
+  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子が「${car.jp}」を間違えました。
+優しくヒントを出して、正解を教えてください。
+条件:ひらがな中心・30字以内・絵文字1個。例:「${car.emoji} あかい くるまだよ！もう いちど！」`;
+  return (await geminiAsk(p)) || `${car.emoji} こたえは ${car.jp}！${car.en}！いっしょに おぼえよう！`;
+}
+// ===== Gemini先生 ここまで =====
+
 const cars = [
   { jp: "しょうぼうしゃ", en: "Fire Truck", readJp: "しょうぼうしゃ！かじを けすよ！", readEn: "Fire truck!", type: "fire", category: "くるま",
     fact: "しょうぼうしゃは おおきな ポンプで みずを だすよ。はしごしゃは ビルの うえまで とどくんだ！", emoji: "🚒" },
@@ -1423,7 +1591,7 @@ function animateCarBox() {
   box.style.animation = 'slideIn 0.4s cubic-bezier(.4,1.6,.6,1)';
 }
 
-function showQ() {
+async function showQ() {
   answered=false; const car=cars[order[idx]];
   const display = document.getElementById("carDisplay");
   if (photoMap[car.type]) {
@@ -1443,12 +1611,16 @@ function showQ() {
   document.getElementById("qnum").textContent=idx+1;
   updateProgress();
   animateCarBox();
-  setTimeout(speakQ,400);
+  // Gemini先生が質問する
+  setTeacherThinking();
+  const qText = await geminiQuestion(car);
+  showTeacher(qText);
 }
-function answer(chosen,correct,btn) {
+async function answer(chosen,correct,btn) {
   if(answered) return; answered=true;
   const car=cars[order[idx]];
   document.querySelectorAll(".choice-btn").forEach(b=>{b.style.pointerEvents="none"; if(b.dataset.jp===correct) b.classList.add("correct");});
+  setTeacherThinking();
   if(chosen===correct) {
     correctCount++;
     const scoreEl = document.getElementById("correct");
@@ -1456,17 +1628,19 @@ function answer(chosen,correct,btn) {
     scoreEl.classList.remove('popped');
     scoreEl.offsetHeight;
     scoreEl.classList.add('popped');
-    document.getElementById("feedback").innerHTML='<div class="fb-inner"><div class="fb-jp" style="color:#2ECC71">🎉 せいかい！すごい！</div><div class="fb-en">Great job! That\'s right!</div></div>';
+    document.getElementById("feedback").innerHTML='<div class="fb-inner"><div class="fb-jp" style="color:#2ECC71">🎉 せいかい！</div></div>';
     playCorrectSound();
     launchConfetti();
     setTimeout(() => playVehicleSound(car.type), 600);
-    sayJp("せいかい！すごい！"+car.readJp,()=>sayEn(car.readEn));
+    const praiseText = await geminiCorrect(car);
+    showTeacher(praiseText);
   } else {
     btn.classList.add("wrong");
     playWrongSound();
-    document.getElementById("feedback").innerHTML=`<div class="fb-inner"><div class="fb-jp" style="color:#E74C3C">💦 こたえは「${correct}」だよ！</div><div class="fb-en">The answer is "${car.en}"!</div></div>`;
+    document.getElementById("feedback").innerHTML=`<div class="fb-inner"><div class="fb-jp" style="color:#E74C3C">💦 もう いちど！</div></div>`;
     setTimeout(() => playVehicleSound(car.type), 600);
-    sayJp("ざんねん！こたえは "+car.readJp,()=>sayEn(car.readEn));
+    const hintText = await geminiHint(car);
+    showTeacher(hintText);
   }
   if(idx<order.length-1) { document.getElementById("nextBtn").style.display="block"; } else { setTimeout(showResult,2500); }
 }
@@ -1562,6 +1736,12 @@ function startQuiz() {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('gameArea').style.display = 'block';
   switchMode('quiz');
+  // 初回はAPIキー設定モーダルを表示
+  if (!geminiKey) {
+    setTimeout(showApiKeyModal, 600);
+  } else {
+    setTimeout(() => showTeacher('クイズを はじめるよ！がんばってね！🦉'), 400);
+  }
 }
 function startZukan() {
   initSpeech();
@@ -1661,6 +1841,21 @@ function sayCurrentZukanFact() {
   sayJp(car.fact);
 }
 </script>
+<!-- APIキー設定モーダル -->
+<div id="apiKeyModal">
+  <div class="api-modal-box">
+    <div style="font-size:56px; margin-bottom:10px;">🦉✨</div>
+    <div style="font-size:22px; font-weight:900; color:#FF6B6B; margin-bottom:8px;">Gemini先生の<br>APIキーを入れてね！</div>
+    <div style="font-size:13px; color:#888; margin-bottom:18px; line-height:1.7;">
+      Google AI Studio で<br>「Gemini API キー」を取得して<br>下に貼り付けてください 🔑
+    </div>
+    <input id="apiKeyInput" class="api-key-input" type="text" placeholder="AIza...（ここにペースト）">
+    <button onclick="saveApiKey()" style="width:100%; padding:16px; border:none; border-radius:14px; background:linear-gradient(90deg,#FF6B6B,#FF9F43); color:#fff; font-size:18px; font-weight:900; cursor:pointer; font-family:inherit; box-shadow:0 4px 16px rgba(255,107,107,0.35); margin-bottom:10px;">✅ けってい！</button>
+    <br>
+    <button onclick="skipApiKey()" style="border:none; background:none; color:#ccc; font-size:13px; cursor:pointer; font-family:inherit;">あとで入れる（先生なしで遊ぶ）</button>
+  </div>
+</div>
+
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');

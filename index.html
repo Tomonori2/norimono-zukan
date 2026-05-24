@@ -572,25 +572,29 @@ function setTeacherThinking() {
   bubble.classList.add('animate');
 }
 
+const KOSAKA_CHAR = `あなたは「高坂先生」です。優しくて頼りになる男の先生で、2〜4歳の子供が大好きです。
+口癖：「ピポパポ！」「けいさんかんりょう！」「せんせい的に いうと…」をときどき使う。
+話し方：ゆっくり・はっきり・明るく。ひらがな中心で短く。`;
+
 async function geminiQuestion(car) {
-  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子に乗り物クイズを出しています。
-乗り物「${car.jp}」(英語:${car.en})の問題を出すとき、元気よく短い質問を言ってください。
-条件:ひらがな中心・30字以内・絵文字1つ・日本語のみ。例:「これは なにかな〜？🤔」`;
-  return (await geminiAsk(p)) || `これは なにかな〜？🤔`;
+  const p = `${KOSAKA_CHAR}
+乗り物「${car.jp}」(英語:${car.en})のクイズを出します。元気よく短い質問を言ってください。
+条件:30字以内・絵文字1つ・ひらがな中心。例:「ピポパポ！これは なにかな〜？🤔」`;
+  return (await geminiAsk(p)) || `ピポパポ！これは なにかな〜？🤔`;
 }
 
 async function geminiCorrect(car) {
-  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子が「${car.jp}」に正解しました！
-元気よく褒めて、乗り物名を日本語と英語で教えてください。
-条件:ひらがな中心・40字以内・絵文字1〜2個。例:「やったね！🎉 これは きゅうきゅうしゃ！Ambulance！すごい！」`;
-  return (await geminiAsk(p)) || `やったね！🎉 これは ${car.jp}！${car.en}！すごいね！`;
+  const p = `${KOSAKA_CHAR}
+子どもが「${car.jp}」に正解しました！元気よく褒めて、乗り物名を日本語と英語で教えてください。
+条件:40字以内・絵文字1〜2個・ひらがな中心。例:「けいさんかんりょう！🎉 これは しょうぼうしゃ！Fire Truck！すごいぞ！」`;
+  return (await geminiAsk(p)) || `けいさんかんりょう！🎉 これは ${car.jp}！${car.en}！すごいぞ！`;
 }
 
 async function geminiHint(car) {
-  const p = `あなたは優しい子供の先生「のりのり先生」です。2〜4歳の子が「${car.jp}」を間違えました。
-優しくヒントを出して、正解を教えてください。
-条件:ひらがな中心・30字以内・絵文字1個。例:「${car.emoji} あかい くるまだよ！もう いちど！」`;
-  return (await geminiAsk(p)) || `${car.emoji} こたえは ${car.jp}！${car.en}！いっしょに おぼえよう！`;
+  const p = `${KOSAKA_CHAR}
+子どもが「${car.jp}」を間違えました。優しくヒントを出して正解を教えてください。
+条件:30字以内・絵文字1個・ひらがな中心。例:「せんせい的に いうと… ${car.emoji} あかい くるまだよ！もう いちど！」`;
+  return (await geminiAsk(p)) || `せんせい的に いうと… ${car.emoji} こたえは ${car.jp}！いっしょに おぼえよう！`;
 }
 // ===== Gemini先生 ここまで =====
 
@@ -1472,10 +1476,13 @@ let speechReady = false;
 let jaVoice = null;
 function initSpeech() {
   if (!window.speechSynthesis) return;
-  // 日本語音声を探す
+  // 日本語の男性音声を優先して選ぶ
   function findJaVoice() {
     const voices = speechSynthesis.getVoices();
-    jaVoice = voices.find(v => v.lang === 'ja-JP') || voices.find(v => v.lang.startsWith('ja')) || null;
+    const jaVoices = voices.filter(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
+    // 男性っぽい名前を優先（Otoya, Kyoko以外, Hattori など）
+    const maleVoice = jaVoices.find(v => /otoya|hattori|male|man/i.test(v.name));
+    jaVoice = maleVoice || jaVoices[0] || null;
     if (voices.length > 0) speechReady = true;
   }
   findJaVoice();
@@ -1495,8 +1502,8 @@ function sayJp(text, cb) {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'ja-JP';
-      u.rate = 0.85;
-      u.pitch = 1.1;
+      u.rate = 0.80;
+      u.pitch = 0.80;
       u.volume = 1.0;
       if (jaVoice) u.voice = jaVoice;
       u.onend = () => { if (cb) cb(); };

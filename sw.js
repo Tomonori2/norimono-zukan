@@ -1,4 +1,4 @@
-const CACHE = 'kuruma-quiz-v3';
+const CACHE = 'kuruma-quiz-v4-kosaka';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

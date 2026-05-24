@@ -327,9 +327,16 @@ body {
   margin-bottom: 14px; padding: 0 2px;
 }
 .teacher-char {
-  font-size: 60px; flex-shrink: 0; line-height: 1;
+  width: 76px; height: 92px; flex-shrink: 0;
+  border-radius: 16px; overflow: hidden;
   animation: teacherBob 2.8s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(255,107,107,0.25));
+  box-shadow: 0 4px 14px rgba(255,107,107,0.3);
+  border: 3px solid #FFD093;
+}
+.teacher-char img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: 37% 8%;
 }
 .teacher-bubble {
   background: linear-gradient(135deg, #fffdf5, #fff8ec);
@@ -431,7 +438,7 @@ body {
   <div id="quiz">
     <!-- Gemini先生キャラクター -->
     <div class="teacher-row" id="teacherRow">
-      <div class="teacher-char">🦉</div>
+      <div class="teacher-char"><img src="sensei.png" alt="高坂先生"></div>
       <div class="teacher-bubble animate" id="teacherBubble">
         <span id="teacherText">よんでいるよ〜 🎵</span>
       </div>

@@ -307,6 +307,48 @@ body {
 /* 先生バブルで代替するため旧テキストを非表示 */
 .q-jp, .q-en { display: none; }
 
+/* --- スプラッシュ画面の先生 --- */
+.splash-teacher-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 0 18px;
+  justify-content: center;
+}
+.splash-teacher-img {
+  width: 110px; height: 130px; flex-shrink: 0;
+  border-radius: 22px; overflow: hidden;
+  border: 4px solid #FFD093;
+  box-shadow: 0 6px 20px rgba(255,107,107,0.3);
+  animation: teacherBob 2.8s ease-in-out infinite;
+}
+.splash-teacher-img img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: 37% 8%;
+}
+.splash-teacher-bubble {
+  background: linear-gradient(135deg, #fffdf5, #fff8ec);
+  border: 3px solid #FFD093;
+  border-radius: 22px 22px 22px 6px;
+  padding: 16px 18px; max-width: 220px;
+  font-size: 16px; font-weight: 900; color: #333;
+  line-height: 1.6; text-align: left;
+  box-shadow: 0 5px 18px rgba(255,160,50,0.18);
+  position: relative;
+}
+.splash-teacher-bubble::before {
+  content: ''; position: absolute;
+  left: -15px; top: 24px; width: 0; height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-right: 15px solid #FFD093;
+}
+.splash-teacher-bubble::after {
+  content: ''; position: absolute;
+  left: -11px; top: 26px; width: 0; height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 12px solid #fffdf5;
+}
+
 /* --- ヒントボタン --- */
 .hint-btn {
   width: 100%; padding: 14px; margin-bottom: 10px;
@@ -420,9 +462,12 @@ body {
 <canvas id="confettiCanvas"></canvas>
 <div class="wrap">
   <div id="splash" class="splash">
-    <div class="splash-emoji">🚒 🚑 🚓 🚌</div>
+    <div class="splash-teacher-row">
+      <div class="splash-teacher-img"><img src="sensei.png" alt="高坂先生"></div>
+      <div class="splash-teacher-bubble">いっしょに のりものを<br>おぼえようね！🚒✨</div>
+    </div>
     <div class="splash-title">はたらくのりもの</div>
-    <div class="splash-sub">✨ Working Vehicles Quiz ✨</div>
+    <div class="splash-sub">〜 高坂先生と いっしょに 〜</div>
     <div class="splash-count">のりもの <span id="splashCount">18</span> しゅるい！</div>
     <div class="splash-highscore" id="splashHighscore"></div>
     <div class="splash-cars" id="splashCars"></div>

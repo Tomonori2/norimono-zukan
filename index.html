@@ -712,12 +712,26 @@ async function askHint() {
   btn.textContent = '💭 かんがえているよ…';
   const car = cars[order[idx]];
   hintCount++;
-  const hintType = hintCount === 1 ? '色や見た目' : hintCount === 2 ? 'はたらきや使われる場所' : '音や動きの特徴';
-  const p = `${KOSAKA_CHAR}
-クイズの答えは「${car.jp}」です。子どもが${hintCount}回目のヒントを求めています。
-${hintType}に注目した楽しいヒントを伝えてください。答えの名前は絶対に言わないでください。
-30字以内、ひらがな中心、明るく短く。`;
-  const hint = (await geminiAsk(p)) || `${car.fact.slice(0, 25)}`;
+
+  let instruction = '';
+  let fallback = '';
+  if (hintCount === 1) {
+    instruction = '「いろ」と「おおきさ」のヒント。例：「あかくて おおきい くるまだよ」「ちいさくて しろい のりものだよ」のように、見た目だけを子どもにわかる言葉で言って。';
+    fallback = car.fact.split('。')[0];
+  } else if (hintCount === 2) {
+    instruction = '「なにを する のりもの か」のヒント。例：「かじを けすよ」「びょうきの ひとを はこぶよ」「そらを とぶよ」のように、はたらきだけを短く言って。';
+    fallback = car.readJp.replace(car.jp, '').replace(/[！。]/g, '').trim() || 'たいせつな おしごとを するよ！';
+  } else {
+    instruction = '「どんな おとが する」「どこで みる」のヒント。例：「ピーポー ピーポー って なるよ」「えきで みるよ」「みちを はしるよ」のように具体的に言って。';
+    fallback = 'もう ちょっとで わかるよ！がんばって！';
+  }
+
+  const p = `あなたは「高坂先生」、2〜4歳の子の優しい男の先生です。
+クイズの答え：「${car.jp}」（英語：${car.en}）
+特徴：${car.fact}
+${hintCount}回目のヒント要請です。${instruction}
+ルール：答えの名前「${car.jp}」「${car.en}」は絶対に言わない。25字以内。ひらがな中心。絵文字なし。明るく短く。`;
+  const hint = (await geminiAsk(p)) || fallback;
   showTeacher(hint);
   btn.textContent = '💡 もう いちど ヒント！';
   btn.disabled = false;

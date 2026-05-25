@@ -1,4 +1,4 @@
-const CACHE = 'kuruma-quiz-v7-no-emoji-voice';
+const CACHE = 'kuruma-quiz-v8-better-hint';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

@@ -704,15 +704,20 @@ function setTeacherThinking() {
 const KOSAKA_CHAR = `あなたは「高坂先生」です。優しくて頼りになる男の先生で、2〜4歳の子供が大好きです。
 話し方：ゆっくり・はっきり・明るく・自然な日本語。ひらがな中心で短く。`;
 
+// ヒント呼び出し回数（同じヒントが続かないよう変化を出す）
+let hintCount = 0;
 async function askHint() {
   const btn = document.getElementById('hintBtn');
   btn.disabled = true;
   btn.textContent = '💭 かんがえているよ…';
   const car = cars[order[idx]];
+  hintCount++;
+  const hintType = hintCount === 1 ? '色や見た目' : hintCount === 2 ? 'はたらきや使われる場所' : '音や動きの特徴';
   const p = `${KOSAKA_CHAR}
-子どもが「${car.jp}」のクイズでヒントを求めています。正解の名前は言わずに、見た目や色・はたらきのヒントだけ教えてください。
-条件:30字以内・絵文字1つ・ひらがな中心。例:「あかくて おおきい くるまだよ！🚒」`;
-  const hint = (await geminiAsk(p)) || `${car.emoji} よーく みてみよう！なにか わかるかな？`;
+クイズの答えは「${car.jp}」です。子どもが${hintCount}回目のヒントを求めています。
+${hintType}に注目した楽しいヒントを伝えてください。答えの名前は絶対に言わないでください。
+30字以内、ひらがな中心、明るく短く。`;
+  const hint = (await geminiAsk(p)) || `${car.fact.slice(0, 25)}`;
   showTeacher(hint);
   btn.textContent = '💡 もう いちど ヒント！';
   btn.disabled = false;
@@ -721,22 +726,22 @@ async function askHint() {
 async function geminiQuestion(car) {
   const p = `${KOSAKA_CHAR}
 乗り物「${car.jp}」(英語:${car.en})のクイズを出します。元気よく短い質問を言ってください。
-条件:30字以内・絵文字1つ・ひらがな中心。例:「これは なにかな？🤔」`;
-  return (await geminiAsk(p)) || `これは なにかな？🤔`;
+条件:30字以内・ひらがな中心・絵文字なし。例:「これは なにかな？」`;
+  return (await geminiAsk(p)) || `これは なにかな？`;
 }
 
 async function geminiCorrect(car) {
   const p = `${KOSAKA_CHAR}
 子どもが「${car.jp}」に正解しました！元気よく褒めて、乗り物名を日本語と英語で教えてください。
-条件:40字以内・絵文字1〜2個・ひらがな中心。例:「やったね！🎉 これは しょうぼうしゃ！Fire Truck！よく できたね！」`;
-  return (await geminiAsk(p)) || `やったね！🎉 これは ${car.jp}！${car.en}！よく できたね！`;
+条件:40字以内・ひらがな中心・絵文字なし。例:「やったね！これは しょうぼうしゃ！Fire Truck！よく できたね！」`;
+  return (await geminiAsk(p)) || `やったね！これは ${car.jp}！${car.en}！よく できたね！`;
 }
 
 async function geminiHint(car) {
   const p = `${KOSAKA_CHAR}
-子どもが「${car.jp}」を間違えました。優しくヒントを出して正解を教えてください。
-条件:30字以内・絵文字1個・ひらがな中心。例:「${car.emoji} もう いちど よく みてみよう！」`;
-  return (await geminiAsk(p)) || `${car.emoji} こたえは ${car.jp}！いっしょに おぼえよう！`;
+子どもが「${car.jp}」を間違えました。優しく正解を教えてください。
+条件:30字以内・ひらがな中心・絵文字なし。例:「もう いちど よく みてみよう！」`;
+  return (await geminiAsk(p)) || `こたえは ${car.jp}！いっしょに おぼえよう！`;
 }
 // ===== Gemini先生 ここまで =====
 
@@ -1641,12 +1646,18 @@ function initSpeech() {
   speechSynthesis.speak(dummy);
 }
 
+// 絵文字を除去（読み上げ用）
+function stripEmoji(text) {
+  return text.replace(/[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F000}-\u{1F2FF}]|[\u{1F900}-\u{1F9FF}]|[\u{2300}-\u{23FF}]|[✨🎉🤔💭💡🔊🔑📦⛽🚒🚑🚓🗑️🚛🚌🏗️🚃🚢✈️🔧🚜🏍️🚀⛵🚄👨‍👩‍👧🦉]/gu, '').trim();
+}
+
 function sayJp(text, cb) {
+  const cleanText = stripEmoji(text);
   // 方法1: Web Speech API（スマホで最も確実）
   if (window.speechSynthesis) {
     try {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(cleanText);
       u.lang = 'ja-JP';
       u.rate = 0.85;
       // 音声が女性しかない場合（Android Google 日本語など）はピッチを最低に
@@ -1655,17 +1666,17 @@ function sayJp(text, cb) {
       u.pitch = isFemaleVoice ? 0.3 : 0.55;
       u.volume = 1.0;
       if (jaVoice) u.voice = jaVoice;
-      u.onend = () => { if (cb) cb(); };
-      u.onerror = () => { tryGoogleTTS(text, cb); };
-      // タイムアウト対策（5秒で次へ）
+      u.onerror = () => { tryGoogleTTS(cleanText, cb); };
+      // タイムアウト対策（文字数に応じて長くする：1文字あたり0.5秒＋余裕5秒、最低15秒）
       let ended = false;
       u.onend = () => { ended = true; if (cb) cb(); };
-      setTimeout(() => { if (!ended) { speechSynthesis.cancel(); tryGoogleTTS(text, cb); } }, 5000);
+      const timeoutMs = Math.max(15000, cleanText.length * 500 + 5000);
+      setTimeout(() => { if (!ended) { speechSynthesis.cancel(); tryGoogleTTS(cleanText, cb); } }, timeoutMs);
       speechSynthesis.speak(u);
       return;
     } catch(e) {}
   }
-  tryGoogleTTS(text, cb);
+  tryGoogleTTS(cleanText, cb);
 }
 
 function tryGoogleTTS(text, cb) {
@@ -1755,7 +1766,7 @@ function animateCarBox() {
 }
 
 async function showQ() {
-  answered=false; const car=cars[order[idx]];
+  answered=false; hintCount=0; const car=cars[order[idx]];
   const display = document.getElementById("carDisplay");
   if (photoMap[car.type]) {
     const p = photoMap[car.type];

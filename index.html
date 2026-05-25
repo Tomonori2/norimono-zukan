@@ -1622,9 +1622,13 @@ function initSpeech() {
   function findJaVoice() {
     const voices = speechSynthesis.getVoices();
     const jaVoices = voices.filter(v => v.lang === 'ja-JP' || v.lang.startsWith('ja'));
-    // 男性声を名前で探す（Ichiro, Otoya, Hattori など）
-    const maleVoice = jaVoices.find(v => /ichiro|otoya|hattori|male|man|kenji|hiroshi/i.test(v.name));
-    jaVoice = maleVoice || jaVoices[0] || null;
+    // 男性声を名前で探す
+    const malePattern = /ichiro|otoya|hattori|male|man|kenji|hiroshi|daichi|keita|akira/i;
+    // 女性声を避ける名前パターン
+    const femalePattern = /ayumi|haruka|sayaka|kyoko|nanami|female|woman/i;
+    const maleVoice = jaVoices.find(v => malePattern.test(v.name));
+    const notFemale = jaVoices.find(v => !femalePattern.test(v.name));
+    jaVoice = maleVoice || notFemale || jaVoices[0] || null;
     if (voices.length > 0) speechReady = true;
   }
   findJaVoice();
@@ -1644,8 +1648,8 @@ function sayJp(text, cb) {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'ja-JP';
-      u.rate = 0.80;
-      u.pitch = 0.80;
+      u.rate = 0.85;
+      u.pitch = 0.55;
       u.volume = 1.0;
       if (jaVoice) u.voice = jaVoice;
       u.onend = () => { if (cb) cb(); };

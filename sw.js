@@ -1,4 +1,4 @@
-const CACHE = 'kuruma-quiz-v5-male-voice';
+const CACHE = 'kuruma-quiz-v6-android-male';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

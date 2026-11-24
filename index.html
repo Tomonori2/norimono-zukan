@@ -663,9 +663,10 @@ function skipApiKey() {
 async function geminiAsk(prompt) {
   if (!geminiKey) return null;
   try {
-    const res = await fetch(GEMINI_URL + '?key=' + geminiKey, {
+    // キーはアドレスに付けず、見出し（ヘッダー）で送る。アドレスは記録に残りやすいため
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 60, temperature: 1.1 }

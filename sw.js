@@ -1,4 +1,4 @@
-const CACHE = 'kuruma-quiz-v8-better-hint';
+const CACHE = 'kuruma-quiz-v9-key-header';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
